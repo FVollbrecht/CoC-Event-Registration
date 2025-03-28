@@ -469,3 +469,38 @@ def import_log_file(file_content, append=True):
     except Exception as e:
         logger.error(f"Fehler beim Importieren der Log-Datei: {e}")
         return False
+
+
+# Hilfsfunktionen zur Formaterkennung
+
+def is_using_team_ids(event):
+    """
+    Prüft, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+    
+    Parameters:
+    - event: Das Event-Dictionary
+    
+    Returns:
+    - True, wenn Team-IDs verwendet werden, False sonst
+    """
+    if not event or not event.get("teams") or not isinstance(event["teams"], dict) or len(event["teams"]) == 0:
+        return False
+    
+    # Prüfe das Format der Team-Daten
+    return isinstance(next(iter(event["teams"].values())), dict)
+
+def is_using_waitlist_ids(event):
+    """
+    Prüft, ob die Warteliste das erweiterte Format mit IDs verwendet
+    
+    Parameters:
+    - event: Das Event-Dictionary
+    
+    Returns:
+    - True, wenn Waitlist-IDs verwendet werden, False sonst
+    """
+    if not event or not event.get("waitlist") or not isinstance(event["waitlist"], list) or len(event["waitlist"]) == 0:
+        return False
+    
+    # Prüfe das Format der Wartelisten-Einträge
+    return len(event["waitlist"][0]) > 2

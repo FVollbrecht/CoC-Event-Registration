@@ -249,14 +249,64 @@ async def send_feedback(interaction, message, ephemeral=True, embed=None, view=N
     - True bei erfolgreicher Zustellung
     """
     try:
-        if embed:
-            await interaction.response.send_message(message, embed=embed, ephemeral=ephemeral, view=view)
+        # Prüfe ob die Interaktion bereits beantwortet wurde
+        response_already_done = False
+        try:
+            # Verwende is_responded, wenn vorhanden (neuere discord.py-Versionen)
+            if hasattr(interaction, 'response') and hasattr(interaction.response, 'is_done'):
+                response_already_done = interaction.response.is_done()
+            # Fallback für ältere discord.py-Versionen
+            elif hasattr(interaction, 'response') and hasattr(interaction.response, 'is_finished'):
+                response_already_done = interaction.response.is_finished()
+        except Exception:
+            # Im Zweifel versuchen wir erst response und dann followup
+            pass
+        
+        # Je nach Zustand der Interaktion den richtigen Sendemechanismus verwenden
+        if response_already_done:
+            # Die Interaktion wurde bereits beantwortet, also followup verwenden
+            if view is None:
+                if embed:
+                    await interaction.followup.send(message, embed=embed, ephemeral=ephemeral)
+                else:
+                    await interaction.followup.send(message, ephemeral=ephemeral)
+            else:
+                if embed:
+                    await interaction.followup.send(message, embed=embed, ephemeral=ephemeral, view=view)
+                else:
+                    await interaction.followup.send(message, ephemeral=ephemeral, view=view)
         else:
-            await interaction.response.send_message(message, ephemeral=ephemeral, view=view)
+            # Die Interaktion wurde noch nicht beantwortet, also response verwenden
+            if view is None:
+                if embed:
+                    await interaction.response.send_message(message, embed=embed, ephemeral=ephemeral)
+                else:
+                    await interaction.response.send_message(message, ephemeral=ephemeral)
+            else:
+                if embed:
+                    await interaction.response.send_message(message, embed=embed, ephemeral=ephemeral, view=view)
+                else:
+                    await interaction.response.send_message(message, ephemeral=ephemeral, view=view)
         return True
     except Exception as e:
         logger.error(f"Fehler beim Senden von Feedback: {e}")
-        return False
+        try:
+            # Letzter Versuch mit followup, falls alles andere fehlschlägt
+            # Prüfe ob view None ist (discord.py erwartet für view ein View-Objekt, nicht None)
+            if view is None:
+                if embed:
+                    await interaction.followup.send(message, embed=embed, ephemeral=ephemeral)
+                else:
+                    await interaction.followup.send(message, ephemeral=ephemeral)
+            else:
+                if embed:
+                    await interaction.followup.send(message, embed=embed, ephemeral=ephemeral, view=view)
+                else:
+                    await interaction.followup.send(message, ephemeral=ephemeral, view=view)
+            return True
+        except Exception as e2:
+            logger.error(f"Auch zweiter Versuch fehlgeschlagen: {e2}")
+            return False
 
 async def handle_team_unregistration(interaction, team_name, is_admin=False):
     """
@@ -281,10 +331,10 @@ async def handle_team_unregistration(interaction, team_name, is_admin=False):
     team_on_waitlist = False
     waitlist_indices = []
     
-    # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
-    using_team_ids = False
-    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
-        using_team_ids = True
+    # Verwende Hilfsfunktion zur Formaterkennung
+    from utils import is_using_team_ids, is_using_waitlist_ids
+    using_team_ids = is_using_team_ids(event)
+    using_waitlist_ids = is_using_waitlist_ids(event)
     
     if using_team_ids:
         # Neues Format mit Team-IDs
@@ -298,11 +348,6 @@ async def handle_team_unregistration(interaction, team_name, is_admin=False):
             if name.lower() == team_name:
                 team_registered = True
                 break
-    
-    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
-    using_waitlist_ids = False
-    if event["waitlist"] and len(event["waitlist"][0]) > 2:
-        using_waitlist_ids = True
     
     # Suche alle Einträge des Teams auf der Warteliste
     if using_waitlist_ids:
@@ -397,10 +442,9 @@ async def handle_team_size_change(interaction, team_name, old_size, new_size, is
                 # Aktualisiere die angemeldete Teamgröße
                 event["slots_used"] += available_slots
                 
-                # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
-                using_team_ids = False
-                if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
-                    using_team_ids = True
+                # Verwende Hilfsfunktion zur Formaterkennung
+                from utils import is_using_team_ids
+                using_team_ids = is_using_team_ids(event)
                 
                 if using_team_ids:
                     # Neues Format mit Team-IDs
@@ -428,10 +472,9 @@ async def handle_team_size_change(interaction, team_name, old_size, new_size, is
                     from utils import generate_team_id
                     team_id = generate_team_id(team_name)
                 
-                # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
-                using_waitlist_ids = False
-                if event["waitlist"] and len(event["waitlist"][0]) > 2:
-                    using_waitlist_ids = True
+                # Verwende Hilfsfunktion zur Formaterkennung
+                from utils import is_using_waitlist_ids
+                using_waitlist_ids = is_using_waitlist_ids(event)
                 
                 if using_waitlist_ids:
                     event["waitlist"].append((team_name, waitlist_size, team_id))
@@ -453,10 +496,9 @@ async def handle_team_size_change(interaction, team_name, old_size, new_size, is
                 from utils import generate_team_id
                 team_id = generate_team_id(team_name)
                 
-                # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
-                using_waitlist_ids = False
-                if event["waitlist"] and len(event["waitlist"][0]) > 2:
-                    using_waitlist_ids = True
+                # Verwende Hilfsfunktion zur Formaterkennung
+                from utils import is_using_waitlist_ids
+                using_waitlist_ids = is_using_waitlist_ids(event)
                 
                 if using_waitlist_ids:
                     event["waitlist"].append((team_name, new_size, team_id))
@@ -3809,8 +3851,21 @@ async def team_list(interaction: discord.Interaction):
     # Add registered teams section
     if event["teams"]:
         registered_text = ""
-        for idx, (team_name, size) in enumerate(sorted(event["teams"].items()), 1):
-            registered_text += f"**{idx}.** {team_name.capitalize()} - {size} Mitglieder\n"
+        # Prüfe, ob das Team-Dictionary jetzt das erweiterte Format mit IDs verwendet
+        using_team_ids = False
+        if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+            using_team_ids = True
+        
+        if using_team_ids:
+            # Neues Format mit Team-IDs
+            for idx, (team_name, data) in enumerate(sorted(event["teams"].items()), 1):
+                team_size = data.get("size", 0)
+                team_id = data.get("id", "")
+                registered_text += f"**{idx}.** {team_name.capitalize()} - {team_size} Mitglieder | ID: `{team_id}`\n"
+        else:
+            # Altes Format ohne Team-IDs
+            for idx, (team_name, size) in enumerate(sorted(event["teams"].items()), 1):
+                registered_text += f"**{idx}.** {team_name.capitalize()} - {size} Mitglieder\n"
         
         embed.add_field(
             name=f"📋 Angemeldete Teams ({event['slots_used']}/{event['max_slots']} Slots)",
@@ -3827,8 +3882,21 @@ async def team_list(interaction: discord.Interaction):
     # Add waitlist section
     if event["waitlist"]:
         waitlist_text = ""
-        for idx, (team_name, size) in enumerate(event["waitlist"], 1):
-            waitlist_text += f"**{idx}.** {team_name.capitalize()} - {size} Mitglieder\n"
+        # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+        using_waitlist_ids = False
+        if event["waitlist"] and len(event["waitlist"][0]) > 2:
+            using_waitlist_ids = True
+        
+        if using_waitlist_ids:
+            # Neues Format mit Team-IDs
+            for idx, entry in enumerate(event["waitlist"], 1):
+                if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                    team_name, size, team_id = entry
+                    waitlist_text += f"**{idx}.** {team_name.capitalize()} - {size} Mitglieder | ID: `{team_id}`\n"
+        else:
+            # Altes Format ohne Team-IDs
+            for idx, (team_name, size) in enumerate(event["waitlist"], 1):
+                waitlist_text += f"**{idx}.** {team_name.capitalize()} - {size} Mitglieder\n"
         
         embed.add_field(
             name="⏳ Warteliste",
@@ -3878,15 +3946,41 @@ async def export_csv(interaction: discord.Interaction):
     csv_writer = csv.writer(output)
     
     # Write header
-    csv_writer.writerow(["Team", "Größe", "Status"])
+    csv_writer.writerow(["Team", "Größe", "Status", "Team-ID"])
     
     # Write registered teams
-    for team_name, size in event["teams"].items():
-        csv_writer.writerow([team_name, size, "Angemeldet"])
+    # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+    using_team_ids = False
+    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+        using_team_ids = True
+    
+    if using_team_ids:
+        # Neues Format mit Team-IDs
+        for team_name, data in event["teams"].items():
+            size = data.get("size", 0)
+            team_id = data.get("id", "")
+            csv_writer.writerow([team_name, size, "Angemeldet", team_id])
+    else:
+        # Altes Format ohne Team-IDs
+        for team_name, size in event["teams"].items():
+            csv_writer.writerow([team_name, size, "Angemeldet", ""])
     
     # Write waitlist teams
-    for team_name, size in event["waitlist"]:
-        csv_writer.writerow([team_name, size, "Warteliste"])
+    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+    using_waitlist_ids = False
+    if event["waitlist"] and len(event["waitlist"][0]) > 2:
+        using_waitlist_ids = True
+    
+    if using_waitlist_ids:
+        # Neues Format mit Team-IDs
+        for entry in event["waitlist"]:
+            if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                team_name, size, team_id = entry
+                csv_writer.writerow([team_name, size, "Warteliste", team_id])
+    else:
+        # Altes Format ohne Team-IDs
+        for team_name, size in event["waitlist"]:
+            csv_writer.writerow([team_name, size, "Warteliste", ""])
     
     # Reset stream position to start
     output.seek(0)
@@ -4491,7 +4585,24 @@ async def admin_waitlist_command(interaction: discord.Interaction):
     # Warteliste formatieren
     waitlist_str = "## 📋 Warteliste\n\n"
     for idx, entry in enumerate(event['waitlist']):
-        waitlist_str += f"**{idx+1}.** {entry['team_name']} ({entry['size']} Spieler, Team-ID: {entry.get('team_id', 'N/A')})\n"
+        # Prüfe das Format der Wartelisten-Einträge
+        if isinstance(entry, dict):
+            # Dictionary-Format (neues Format)
+            team_name = entry.get('team_name', 'Unbekannt')
+            size = entry.get('size', 0)
+            team_id = entry.get('team_id', 'N/A')
+            waitlist_str += f"**{idx+1}.** {team_name} ({size} Spieler, Team-ID: {team_id})\n"
+        elif isinstance(entry, tuple) and len(entry) >= 3:
+            # Tupel-Format mit Team-ID (team_name, size, team_id)
+            team_name, size, team_id = entry
+            waitlist_str += f"**{idx+1}.** {team_name} ({size} Spieler, Team-ID: {team_id})\n"
+        elif isinstance(entry, tuple) and len(entry) >= 2:
+            # Tupel-Format ohne Team-ID (team_name, size)
+            team_name, size = entry[:2]
+            waitlist_str += f"**{idx+1}.** {team_name} ({size} Spieler)\n"
+        else:
+            # Unbekanntes Format
+            waitlist_str += f"**{idx+1}.** {entry} (Format nicht erkannt)\n"
     
     # Warteliste als Embed senden
     embed = discord.Embed(
@@ -4808,6 +4919,7 @@ async def clear_log_command(interaction: discord.Interaction):
         def __init__(self):
             super().__init__(title="Log-Datei löschen")
         
+        @ui.button(label="Ja, Log löschen", style=discord.ButtonStyle.danger)
         async def confirm_callback(self, interaction: discord.Interaction, button: ui.Button):
             # Log-Datei leeren
             success = clear_log_file()
@@ -4832,6 +4944,7 @@ async def clear_log_command(interaction: discord.Interaction):
                     ephemeral=True
                 )
         
+        @ui.button(label="Abbrechen", style=discord.ButtonStyle.secondary)
         async def cancel_callback(self, interaction: discord.Interaction, button: ui.Button):
             await send_feedback(
                 interaction,

@@ -1,0 +1,260 @@
+--- Log neu gestartet: 2025-03-28 09:41:45 ---
+2025-03-28 09:41:45,285 - event_bot - INFO - Log-Datei gelöscht und Backup erstellt: log_backups/log_backup_2025-03-28_09-41-45.log
+2025-03-28 09:41:45,453 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 09:41:45,453 - event_bot - INFO - 🗑️ Log-Löschung: Admin saberrider hat die Log-Datei geleert
+2025-03-28 09:41:56,997 - event_bot - INFO - Slash-Command: /export_log ausgeführt von saberrider (552617940168736770) in Kanal registration
+2025-03-28 09:41:56,998 - event_bot - INFO - Log-Datei erfolgreich exportiert: log_export_2025-03-28_09-41-56.log
+2025-03-28 09:41:57,163 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 09:41:57,547 - event_bot - INFO - 📥 Log-Export: Admin saberrider hat die Log-Datei exportiert
+2025-03-28 09:42:19,218 - event_bot - INFO - Slash-Command: /import_log ausgeführt von saberrider (552617940168736770) in Kanal registration mit Parameter append=True
+2025-03-28 09:42:19,416 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 09:44:31,280 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 09:44:34,325 - event_bot - INFO - 🔄 Registrierungsvorgang gestartet: saberrider (552617940168736770) öffnet das Team-Registrierungsformular
+2025-03-28 09:44:38,790 - event_bot - INFO - ⚠️ Team teilweise angemeldet: saberrider hat Team 'test' mit insgesamt 5 Spielern angemeldet - 0 im Event, 5 auf Warteliste
+2025-03-28 09:44:38,942 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-28 09:44:38,942 - event_bot - ERROR - Error sending event details: too many values to unpack (expected 2)
+2025-03-28 09:44:38,942 - discord.ui.modal - ERROR - Ignoring exception in modal <TeamRegistrationModal timeout=None children=2>:
+Traceback (most recent call last):
+  File "/home/runner/workspace/bot.py", line 3230, in send_event_details
+    embed = format_event_details(event)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/utils.py", line 296, in format_event_details
+    for i, (team_name, size) in enumerate(event['waitlist']):
+           ^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/ui/modal.py", line 189, in _scheduled_task
+    await self.on_submit(interaction)
+  File "/home/runner/workspace/bot.py", line 1150, in on_submit
+    await send_event_details(channel)
+  File "/home/runner/workspace/bot.py", line 3257, in send_event_details
+    await channel.send(format_event_list(event))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/utils.py", line 336, in format_event_list
+    for i, (team_name, size) in enumerate(event['waitlist']):
+           ^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)
+2025-03-28 09:44:54,431 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+--- Log Start: 2025-03-28 09:46:53 ---
+2025-03-28 09:46:53,104 - event_bot - INFO - Logger initialisiert
+2025-03-28 09:46:53,105 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 09:46:53,106 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:46:53,109 - event_bot - INFO - Starting bot...
+2025-03-28 09:46:53,109 - discord.client - INFO - logging in using static token
+2025-03-28 09:46:53,775 - event_bot - INFO - Slash commands synced
+2025-03-28 09:46:54,051 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 213246728c5ae3774eff912602b83e8b).
+2025-03-28 09:46:56,058 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 09:46:56,058 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 09:46:56,058 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 09:46:56,060 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:46:56,063 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 09:46:57,729 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 09:48:10,358 - discord.app_commands.tree - ERROR - Ignoring exception in command 'team_list'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3830, in team_list
+    for idx, (team_name, size) in enumerate(event["waitlist"], 1):
+             ^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'team_list' raised an exception: ValueError: too many values to unpack (expected 2)
+2025-03-28 09:48:44,608 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 09:49:04,436 - discord.app_commands.tree - ERROR - Ignoring exception in command 'admin_waitlist'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 4494, in admin_waitlist_command
+    waitlist_str += f"**{idx+1}.** {entry['team_name']} ({entry['size']} Spieler, Team-ID: {entry.get('team_id', 'N/A')})\n"
+                                    ~~~~~^^^^^^^^^^^^^
+TypeError: tuple indices must be integers or slices, not str
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 872, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'admin_waitlist' raised an exception: TypeError: tuple indices must be integers or slices, not str
+--- Log Start: 2025-03-28 09:50:09 ---
+2025-03-28 09:50:09,419 - event_bot - INFO - Logger initialisiert
+2025-03-28 09:50:09,420 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 09:50:09,421 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:50:09,424 - event_bot - INFO - Starting bot...
+2025-03-28 09:50:09,424 - discord.client - INFO - logging in using static token
+2025-03-28 09:50:10,044 - event_bot - INFO - Slash commands synced
+2025-03-28 09:50:10,349 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 37e4ce2f1d8c279309b25efd49da38f3).
+2025-03-28 09:50:12,357 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 09:50:12,358 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 09:50:12,358 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 09:50:12,394 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:50:12,397 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 09:50:12,677 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 09:50:17,911 - discord.app_commands.tree - ERROR - Ignoring exception in command 'team_list'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3830, in team_list
+    for idx, (team_name, size) in enumerate(event["waitlist"], 1):
+             ^^^^^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'team_list' raised an exception: ValueError: too many values to unpack (expected 2)
+--- Log Start: 2025-03-28 09:50:46 ---
+2025-03-28 09:50:46,670 - event_bot - INFO - Logger initialisiert
+2025-03-28 09:50:46,671 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 09:50:46,671 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:50:46,675 - event_bot - INFO - Starting bot...
+2025-03-28 09:50:46,675 - discord.client - INFO - logging in using static token
+2025-03-28 09:50:47,451 - event_bot - INFO - Slash commands synced
+2025-03-28 09:50:47,854 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4ed35c973dcc943ed18283252fd1fcf1).
+2025-03-28 09:50:49,860 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 09:50:49,860 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 09:50:49,861 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 09:50:49,911 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 09:50:49,915 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 09:50:50,142 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 09:54:59,146 - event_bot - INFO - 📊 CSV-Export: Admin saberrider hat eine CSV-Datei der Teams für Event 'Saber the huth' exportiert
+2025-03-28 09:54:59,630 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+--- Log Start: 2025-03-28 10:01:18 ---
+2025-03-28 10:01:18,091 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:01:18,092 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:01:18,092 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:01:18,096 - event_bot - INFO - Starting bot...
+2025-03-28 10:01:18,097 - discord.client - INFO - logging in using static token
+2025-03-28 10:01:19,003 - event_bot - INFO - Slash commands synced
+2025-03-28 10:01:19,306 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 6edfcddda0d0c0d9852d08a70545ce1f).
+2025-03-28 10:01:21,340 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:01:21,340 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:01:21,340 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:01:21,346 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:01:21,349 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:01:21,583 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 10:21:06 ---
+2025-03-28 10:21:06,561 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:21:06,562 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:21:06,563 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:21:06,566 - event_bot - INFO - Starting bot...
+2025-03-28 10:21:06,566 - discord.client - INFO - logging in using static token
+2025-03-28 10:21:07,428 - event_bot - INFO - Slash commands synced
+2025-03-28 10:21:07,771 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: b1bfd88296b5311731277a62eb64bf60).
+2025-03-28 10:21:09,803 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:21:09,804 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:21:09,804 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:21:09,808 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:21:09,811 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:21:10,000 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 10:21:31 ---
+2025-03-28 10:21:31,497 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:21:31,497 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:21:31,498 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:21:31,501 - event_bot - INFO - Starting bot...
+2025-03-28 10:21:31,502 - discord.client - INFO - logging in using static token
+2025-03-28 10:22:07,322 - event_bot - INFO - Slash commands synced
+2025-03-28 10:22:07,609 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c6e8ceea794eeb72da5b4c85a9b77d5b).
+2025-03-28 10:22:09,678 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:22:09,678 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:22:09,678 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:22:09,681 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:22:09,683 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:22:09,939 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 10:24:11 ---
+2025-03-28 10:24:11,675 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:24:11,676 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:24:11,677 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:24:11,680 - event_bot - INFO - Starting bot...
+2025-03-28 10:24:11,680 - discord.client - INFO - logging in using static token
+2025-03-28 10:24:12,327 - event_bot - INFO - Slash commands synced
+2025-03-28 10:24:12,657 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4b96b25d87138e30e9eb5bf577874a35).
+2025-03-28 10:24:14,664 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:24:14,664 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:24:14,664 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:24:14,699 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:24:14,702 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:24:14,933 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 10:25:32,377 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'bot666' mit 6 Mitgliedern hinzuzufügen
+2025-03-28 10:25:32,848 - event_bot - INFO - Admin saberrider hat Team bot666 mit 6 Personen zur Warteliste hinzugefügt (keine Slots verfügbar).
+2025-03-28 10:25:32,849 - event_bot - INFO - 📝 Admin saberrider hat Team 'bot666' mit 6 Personen zur Warteliste hinzugefügt (keine Slots verfügbar).
+2025-03-28 10:25:33,059 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-28 10:26:56,682 - discord.app_commands.tree - ERROR - Ignoring exception in command 'admin_waitlist'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 4520, in admin_waitlist_command
+    waitlist_str += f"**{idx+1}.** {entry['team_name']} ({entry['size']} Spieler, Team-ID: {entry.get('team_id', 'N/A')})\n"
+                                    ~~~~~^^^^^^^^^^^^^
+TypeError: tuple indices must be integers or slices, not str
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 872, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'admin_waitlist' raised an exception: TypeError: tuple indices must be integers or slices, not str
+--- Log Start: 2025-03-28 10:28:22 ---
+2025-03-28 10:28:22,825 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:28:22,825 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:28:22,826 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:28:22,829 - event_bot - INFO - Starting bot...
+2025-03-28 10:28:22,830 - discord.client - INFO - logging in using static token
+2025-03-28 10:28:23,598 - event_bot - INFO - Slash commands synced
+2025-03-28 10:28:24,007 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 85af33bc47e8aea409187ba51a9efc65).
+2025-03-28 10:28:26,012 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:28:26,012 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:28:26,014 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:28:26,050 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:28:26,052 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:28:26,768 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 10:28:40 ---
+2025-03-28 10:28:40,865 - event_bot - INFO - Logger initialisiert
+2025-03-28 10:28:40,866 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 10:28:40,867 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:28:40,871 - event_bot - INFO - Starting bot...
+2025-03-28 10:28:40,871 - discord.client - INFO - logging in using static token
+2025-03-28 10:29:23,600 - event_bot - INFO - Slash commands synced
+2025-03-28 10:29:23,920 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 903f3b1a6e3b5920bc75ce0403385546).
+2025-03-28 10:29:25,927 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 10:29:25,927 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 10:29:25,927 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 10:29:25,959 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 10:29:25,962 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 10:29:26,191 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 10:29:59,757 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 10:30:24,168 - event_bot - ERROR - Fehler beim Senden von Feedback: 'NoneType' object has no attribute 'is_finished'
+2025-03-28 10:30:57,968 - event_bot - INFO - Slash-Command: /clear_log ausgeführt von saberrider (552617940168736770) in Kanal log
