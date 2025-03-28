@@ -18,6 +18,7 @@ Ein fortschrittlicher Discord-Bot für die Verwaltung von Events mit umfassenden
 - **Auto-Nachrücken**: Automatisches Nachrücken von der Warteliste, wenn Plätze frei werden
 - **Format-Erkennung**: Intelligente Erkennung und Unterstützung verschiedener Datenformate
 - **Mehrsprachige Unterstützung**: Vorbereitet für mehrsprachige Implementierung
+- **Kanal-Management**: Löschen von Nachrichten in Kanälen mit Bestätigungsdialog
 
 ## Installation
 
@@ -53,6 +54,8 @@ Ein fortschrittlicher Discord-Bot für die Verwaltung von Events mit umfassenden
    python bot.py
    ```
 
+Detaillierte Installationsanweisungen findest du in der [SETUP.md](SETUP.md) Datei.
+
 ## Verwendung
 
 ### Event-Management Befehle
@@ -63,6 +66,7 @@ Ein fortschrittlicher Discord-Bot für die Verwaltung von Events mit umfassenden
 - `/update` - Aktualisiert die Event-Details im Kanal
 - `/open` - Öffnet die Anmeldungen für das Event wieder (nach Schließung)
 - `/close` - Schließt die Anmeldungen für das Event
+- `/open_registration` - Erhöht die maximale Teamgröße oder entfernt das Limit (nur Admin)
 
 ### Team-Management
 
@@ -81,6 +85,7 @@ Ein fortschrittlicher Discord-Bot für die Verwaltung von Events mit umfassenden
 - `/admin_get_user_id` - Gibt die Discord ID eines Benutzers zurück
 - `/reset_team_assignment` - Setzt die Teamzuweisung eines Benutzers zurück
 - `/export_teams` - Exportiert alle Teams als CSV-Datei
+- `/clear_messages` - Löscht die angegebene Anzahl der letzten Nachrichten im Kanal (neu!)
 
 ### Utility-Befehle
 
@@ -92,16 +97,20 @@ Ein fortschrittlicher Discord-Bot für die Verwaltung von Events mit umfassenden
 - `/sync_commands` - Synchronisiert die Slash-Commands mit der Discord API
 - `/find` - Findet ein Team oder einen Spieler im Event
 
+Eine vollständige Anleitung zur Verwendung des Bots findest du im [USER_GUIDE.md](USER_GUIDE.md).
+
 ## Architektur
 
 Der Bot verwendet eine modulare Architektur mit diesen Hauptkomponenten:
 
 - **Bot-Klasse**: `EventBot` - Die Hauptklasse für den Discord-Bot
 - **Datenmanagement**: Verwendet Pickle für persistente Datenspeicherung
-- **UI-Komponenten**: Verschiedene Klassen für Discord UI-Elemente
+- **UI-Komponenten**: Verschiedene Klassen für Discord UI-Elemente (Buttons, Modals, Dropdowns)
+- **Bestätigungsdialoge**: Robuste Dialoge mit Timeout-Handling für kritische Aktionen
 - **Utilities**: Hilfsfunktionen für Log-Management, Team-IDs und mehr
-- **Validierung**: Funktionen zur Validierung von Benutzereingaben
+- **Validierung**: Funktionen zur Validierung von Benutzereingaben und Befehlskontexten
 - **Event-Anzeige**: Funktionen zum Formatieren und Anzeigen von Event-Details
+- **Wartelisten-Management**: Automatische Verarbeitung von Wartelisten-Einträgen
 
 ### Datenstruktur
 
@@ -138,6 +147,7 @@ Die Event-Daten werden in folgender Struktur gespeichert:
 - **API-Integration**: Anbindung an externe APIs (z.B. für Spielstatistiken)
 - **Turnier-Management**: Erweiterung für die Verwaltung von Turnieren mit Brackets
 - **Automatisierte Erinnerungen**: Automatisches Senden von Erinnerungen vor Events
+- **Erweiterte Berechtigungsverwaltung**: Feinere Kontrolle über Benutzerberechtigungen
 
 ## Fehlerbehebung
 
@@ -147,6 +157,7 @@ Die Event-Daten werden in folgender Struktur gespeichert:
 - **Befehle werden nicht angezeigt**: Führen Sie `/sync_commands` aus, um die Slash-Commands zu synchronisieren
 - **Team kann nicht angemeldet werden**: Prüfen Sie, ob das Event bereits voll ist oder die Anmeldungen geschlossen sind
 - **Wartelisten-Probleme**: Nutzen Sie `/admin_waitlist`, um die Warteliste zu inspizieren
+- **Bestätigungsdialoge funktionieren nicht**: Stellen Sie sicher, dass der Bot die neueste Discord.py-Version verwendet
 
 ### Logging
 
@@ -154,7 +165,8 @@ Der Bot verfügt über umfangreiche Logging-Funktionen:
 
 - Logs werden in `discord_bot.log` gespeichert
 - Wichtige Ereignisse werden zusätzlich im Discord-Kanal `log` dokumentiert
-- Backup-Logs werden im Ordner `log_backups` aufbewahrt
+- Backup-Logs werden im Ordner `log_backups` automatisch erstellt
+- Administratoren können Logs mit `/export_log` exportieren und mit `/clear_log` bereinigen
 
 ## Beitrag zum Projekt
 
@@ -164,6 +176,7 @@ Beiträge sind willkommen! Hier sind einige Möglichkeiten, wie Sie zum Projekt 
 2. Funktionen vorschlagen: Teilen Sie Ihre Ideen über Issues mit
 3. Code beitragen: Reichen Sie Pull Requests ein
 4. Dokumentation verbessern: Ergänzen Sie die README oder erstellen Sie Wiki-Seiten
+5. Tests schreiben: Helfen Sie, die Testabdeckung zu verbessern
 
 ## Lizenz
 
