@@ -1,0 +1,515 @@
+--- Log Start: 2025-03-27 09:43:45 ---
+2025-03-27 09:43:45,369 - event_bot - INFO - Logger initialisiert
+2025-03-27 09:43:45,370 - event_bot - CRITICAL - No Discord bot token found. Set the DISCORD_BOT_TOKEN environment variable.
+--- Log Start: 2025-03-27 09:54:07 ---
+2025-03-27 09:54:07,589 - event_bot - INFO - Logger initialisiert
+2025-03-27 09:54:07,590 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 09:54:07,591 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 09:54:07,593 - discord.client - INFO - logging in using static token
+2025-03-27 09:54:09,708 - event_bot - INFO - Slash commands synced
+2025-03-27 09:54:10,016 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 84f8210da861c4c54704c08aaf153396).
+2025-03-27 09:54:12,027 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+--- Log Start: 2025-03-27 10:00:07 ---
+2025-03-27 10:00:07,874 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:00:07,874 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:00:07,875 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:00:07,878 - discord.client - INFO - logging in using static token
+2025-03-27 10:00:08,598 - event_bot - INFO - Slash commands synced
+2025-03-27 10:00:08,910 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a4ec7f2816a0b37986325ca9085b5a27).
+2025-03-27 10:00:10,925 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+--- Log Start: 2025-03-27 10:04:25 ---
+2025-03-27 10:04:25,333 - event_bot - INFO - Logger initialisiert
+--- Log Start: 2025-03-27 10:06:07 ---
+2025-03-27 10:06:07,153 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:06:07,154 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:06:07,154 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:06:07,156 - discord.client - INFO - logging in using static token
+2025-03-27 10:06:51,607 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:06:51,833 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 89b91fe565245fe87c51889b8a9fdb4f).
+2025-03-27 10:06:53,839 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+2025-03-27 10:06:54,167 - event_bot - INFO - Slash-Befehle global synchronisiert nach dem Hochfahren
+2025-03-27 10:06:54,283 - event_bot - INFO - Slash-Befehle synchronisiert für Server: Clash of Clans || Squad Event (ID: 531083622833455114)
+--- Log Start: 2025-03-27 10:07:25 ---
+2025-03-27 10:07:25,525 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:07:25,526 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:07:25,527 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:07:25,529 - discord.client - INFO - logging in using static token
+2025-03-27 10:07:26,132 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:07:26,398 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4de0fde571203c1368d0cc1b496a8184).
+2025-03-27 10:07:28,414 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+--- Log Start: 2025-03-27 10:07:31 ---
+2025-03-27 10:07:31,693 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:07:31,694 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:07:31,695 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:07:31,719 - discord.client - INFO - logging in using static token
+2025-03-27 10:07:32,318 - discord.http - WARNING - We are being rate limited. PUT https://discord.com/api/v10/applications/1350052804064051250/commands responded with 429. Retrying in 23.69 seconds.
+2025-03-27 10:08:56,136 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:08:56,358 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a149d102e17d01dd6a64578734a62f69).
+2025-03-27 10:08:58,369 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+2025-03-27 10:08:58,586 - event_bot - INFO - Slash-Befehle global synchronisiert nach dem Hochfahren
+2025-03-27 10:08:58,806 - event_bot - INFO - Slash-Befehle synchronisiert für Server: Clash of Clans || Squad Event (ID: 531083622833455114)
+--- Log Start: 2025-03-27 10:15:55 ---
+2025-03-27 10:15:55,014 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:15:55,016 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:15:55,018 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:15:55,022 - discord.client - INFO - logging in using static token
+2025-03-27 10:15:55,508 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:15:55,887 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: d9b61b37bbb44fa20490bfa680c39272).
+2025-03-27 10:15:57,895 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+--- Log Start: 2025-03-27 10:17:03 ---
+2025-03-27 10:17:03,068 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:17:03,069 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:17:03,069 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:17:03,072 - discord.client - INFO - logging in using static token
+2025-03-27 10:17:03,761 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:17:04,029 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4a530bbd7f655190683e2fce0310416f).
+2025-03-27 10:17:06,037 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+2025-03-27 10:17:06,037 - event_bot - INFO - 🟢 Bot ist online: CoC-RegBot#5619 ist jetzt einsatzbereit! Version vom 27.03.2025 10:17
+2025-03-27 10:17:06,050 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:18:03,831 - event_bot - INFO - Slash-Befehle global synchronisiert nach dem Hochfahren
+2025-03-27 10:18:04,014 - event_bot - INFO - Slash-Befehle synchronisiert für Server: Clash of Clans || Squad Event (ID: 531083622833455114)
+--- Log Start: 2025-03-27 10:21:18 ---
+2025-03-27 10:21:18,857 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:21:18,858 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:21:18,859 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:21:18,861 - discord.client - INFO - logging in using static token
+2025-03-27 10:21:19,416 - event_bot - INFO - Slash commands synced globally
+2025-03-27 10:21:19,736 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: b5313995d26a3264e4f6a2fa2832ab98).
+2025-03-27 10:21:21,746 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+2025-03-27 10:21:21,746 - event_bot - INFO - 🟢 Bot ist online: CoC-RegBot#5619 ist jetzt einsatzbereit! Version vom 27.03.2025 10:21
+2025-03-27 10:21:21,761 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:22:19,405 - event_bot - INFO - Slash-Befehle global synchronisiert nach dem Hochfahren
+2025-03-27 10:22:19,577 - event_bot - INFO - Slash-Befehle synchronisiert für Server: Clash of Clans || Squad Event (ID: 531083622833455114)
+--- Log Start: 2025-03-27 10:23:20 ---
+2025-03-27 10:23:20,014 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:23:20,015 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:23:20,016 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:23:20,018 - discord.client - INFO - logging in using static token
+2025-03-27 10:23:20,812 - event_bot - INFO - Slash commands synced globally: 12 commands
+2025-03-27 10:23:21,017 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a584ad127ebd896215cf0206969f177c).
+2025-03-27 10:23:23,025 - event_bot - INFO - Bot is ready. Logged in as CoC-RegBot#5619 (ID: 1350052804064051250)
+2025-03-27 10:23:23,025 - event_bot - INFO - 🟢 Bot ist online: CoC-RegBot#5619 ist jetzt einsatzbereit! Version vom 27.03.2025 10:23
+2025-03-27 10:23:23,048 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:23:23,239 - event_bot - INFO - Verfügbare Befehle: init, create, reg, wl, unregister, update, edit, close, open_reg, find, set_channel, help
+2025-03-27 10:24:20,780 - event_bot - INFO - Slash-Befehle global synchronisiert nach dem Hochfahren: 12 Befehle
+2025-03-27 10:24:20,780 - event_bot - INFO - Synchronisierter Befehl: /init
+2025-03-27 10:24:20,780 - event_bot - INFO - Synchronisierter Befehl: /create
+2025-03-27 10:24:20,780 - event_bot - INFO - Synchronisierter Befehl: /reg
+2025-03-27 10:24:20,780 - event_bot - INFO - Synchronisierter Befehl: /wl
+2025-03-27 10:24:20,780 - event_bot - INFO - Synchronisierter Befehl: /unregister
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /update
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /edit
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /close
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /open_reg
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /find
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /set_channel
+2025-03-27 10:24:20,781 - event_bot - INFO - Synchronisierter Befehl: /help
+2025-03-27 10:24:20,933 - event_bot - INFO - Slash-Befehle synchronisiert für Server: Clash of Clans || Squad Event (ID: 531083622833455114) - 0 Befehle
+--- Log Start: 2025-03-27 10:31:55 ---
+2025-03-27 10:31:55,971 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:31:55,972 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:31:55,973 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:31:55,974 - event_bot - INFO - Starting bot...
+2025-03-27 10:31:55,975 - discord.client - INFO - logging in using static token
+2025-03-27 10:31:56,730 - event_bot - INFO - Slash commands synced
+2025-03-27 10:31:56,967 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 8dcc80fb12addf400c99a3054df743a3).
+2025-03-27 10:31:58,974 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 10:31:58,974 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 10:31:58,974 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 10:31:58,996 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:31:58,998 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 10:31:59,195 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 10:48:27 ---
+2025-03-27 10:48:27,249 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:48:27,250 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:48:27,250 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:48:27,252 - event_bot - INFO - Starting bot...
+2025-03-27 10:48:27,253 - discord.client - INFO - logging in using static token
+2025-03-27 10:48:27,860 - event_bot - INFO - Slash commands synced
+2025-03-27 10:48:28,091 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: cc83672fc5882528c1442cd6f11c6ac6).
+2025-03-27 10:48:30,099 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 10:48:30,099 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 10:48:30,099 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 10:48:30,105 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:48:30,107 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 10:48:30,353 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 10:58:09 ---
+2025-03-27 10:58:09,370 - event_bot - INFO - Logger initialisiert
+2025-03-27 10:58:09,371 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 10:58:09,371 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:58:09,373 - event_bot - INFO - Starting bot...
+2025-03-27 10:58:09,374 - discord.client - INFO - logging in using static token
+2025-03-27 10:58:10,268 - event_bot - INFO - Slash commands synced
+2025-03-27 10:58:10,516 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 3ab57ca45e190d25a73cf6dcf6853763).
+2025-03-27 10:58:12,522 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 10:58:12,522 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 10:58:12,522 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 10:58:12,546 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 10:58:12,547 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 10:58:12,807 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 11:06:53 ---
+2025-03-27 11:06:53,912 - event_bot - INFO - Logger initialisiert
+2025-03-27 11:06:53,913 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 11:06:53,914 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:06:53,916 - event_bot - INFO - Starting bot...
+2025-03-27 11:06:53,916 - discord.client - INFO - logging in using static token
+2025-03-27 11:06:54,460 - event_bot - INFO - Slash commands synced
+2025-03-27 11:06:54,690 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: e5c5482071e7d7c5031a56e155a0c487).
+2025-03-27 11:06:56,695 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 11:06:56,695 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 11:06:56,695 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 11:06:56,697 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:06:56,699 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 11:06:56,892 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 11:11:40 ---
+2025-03-27 11:11:40,289 - event_bot - INFO - Logger initialisiert
+2025-03-27 11:11:40,290 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 11:11:40,291 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:11:40,293 - event_bot - INFO - Starting bot...
+2025-03-27 11:11:40,294 - discord.client - INFO - logging in using static token
+2025-03-27 11:11:40,827 - event_bot - INFO - Slash commands synced
+2025-03-27 11:11:41,061 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 71d96b64dc28c3e74491a47181cd242a).
+2025-03-27 11:11:43,066 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 11:11:43,066 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 11:11:43,066 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 11:11:43,085 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:11:43,087 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 11:11:43,259 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 11:26:58 ---
+2025-03-27 11:26:58,664 - event_bot - INFO - Logger initialisiert
+2025-03-27 11:26:58,665 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 11:26:58,666 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:26:58,669 - event_bot - INFO - Starting bot...
+2025-03-27 11:26:58,669 - discord.client - INFO - logging in using static token
+2025-03-27 11:26:59,305 - event_bot - INFO - Slash commands synced
+2025-03-27 11:26:59,493 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a5d1e4c6eb2c6f13ded0eb1a60efbff5).
+2025-03-27 11:27:01,534 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 11:27:01,535 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 11:27:01,535 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 11:27:01,573 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:27:01,575 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 11:27:01,900 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 11:27:53 ---
+2025-03-27 11:27:53,184 - event_bot - INFO - Logger initialisiert
+2025-03-27 11:27:53,185 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 11:27:53,186 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:27:53,188 - event_bot - INFO - Starting bot...
+2025-03-27 11:27:53,189 - discord.client - INFO - logging in using static token
+2025-03-27 11:27:53,869 - event_bot - INFO - Slash commands synced
+2025-03-27 11:27:54,121 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5bc4c410c70d5dbf88fcd4c74b1ca257).
+2025-03-27 11:27:56,148 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 11:27:56,148 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 11:27:56,148 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 11:27:56,154 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 11:27:56,156 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 11:27:56,442 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 11:28:26,240 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 11:28:26,502 - event_bot - INFO - 🆕 Event erstellt: 'ich hasse discord' am 27.03.2025 um 20:00 durch saberrider
+2025-03-27 11:28:26,662 - discord.app_commands.tree - ERROR - Ignoring exception in command 'event'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 2319, in create_event
+    embed = format_event_details(get_event())
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/utils.py", line 228, in format_event_details
+    title=f"📅 Event: {event['name']}",
+                       ~~~~~^^^^^^^^
+KeyError: 'name'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'event' raised an exception: KeyError: 'name'
+2025-03-27 11:28:31,350 - discord.app_commands.tree - ERROR - Ignoring exception in command 'show_event'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 2379, in show_event
+    embed = format_event_details(event)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/utils.py", line 228, in format_event_details
+    title=f"📅 Event: {event['name']}",
+                       ~~~~~^^^^^^^^
+KeyError: 'name'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'show_event' raised an exception: KeyError: 'name'
+--- Log Start: 2025-03-27 12:41:31 ---
+2025-03-27 12:41:31,303 - event_bot - INFO - Logger initialisiert
+2025-03-27 12:41:31,304 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 12:41:31,305 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 12:41:31,308 - event_bot - INFO - Starting bot...
+2025-03-27 12:41:31,309 - discord.client - INFO - logging in using static token
+2025-03-27 12:41:32,104 - event_bot - INFO - Slash commands synced
+2025-03-27 12:41:32,398 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 051ff0158106c46773280e5448dacecb).
+2025-03-27 12:41:34,409 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 12:41:34,409 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 12:41:34,410 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 12:41:34,445 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 12:41:34,451 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 12:41:34,996 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 12:45:48,978 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 12:45:53,001 - event_bot - INFO - 🔄 Registrierungsvorgang gestartet: .walkman112 (392722717876551680) öffnet das Team-Registrierungsformular
+2025-03-27 12:45:55,322 - event_bot - INFO - 🔄 Registrierungsvorgang gestartet: saberrider (552617940168736770) öffnet das Team-Registrierungsformular
+2025-03-27 12:46:20,737 - event_bot - INFO - 🔄 Registrierungsvorgang gestartet: .walkman112 (392722717876551680) öffnet das Team-Registrierungsformular
+2025-03-27 12:46:22,674 - event_bot - INFO - ✅ Team angemeldet: saberrider hat Team 'saberdasarbeitstier' mit 9 Spielern angemeldet
+2025-03-27 12:46:23,185 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:46:42,573 - event_bot - INFO - ✅ Team angemeldet: .walkman112 hat Team 'gruppe01' mit 9 Spielern angemeldet
+2025-03-27 12:46:42,896 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:48:15,836 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:48:15,837 - event_bot - INFO - ⬆️ Teamgröße erhöht: Admin saberrider hat die maximale Teamgröße für Event 'ich hasse discord' auf 18 erhöht
+2025-03-27 12:51:18,809 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 12:51:28,721 - event_bot - INFO - 📈 Teamgröße erhöht: Admin saberrider hat die Größe von Team 'gruppe01' von 9 auf 18 erhöht
+2025-03-27 12:51:30,904 - event_bot - INFO - DM Benachrichtigung an .walkman112 für Team gruppe01 gesendet
+2025-03-27 12:51:30,904 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:51:31,514 - event_bot - INFO - 👤 Admin-Teambearbeitungsprozess gestartet: .walkman112 (392722717876551680) wählt ein Team zur Bearbeitung
+2025-03-27 12:51:49,895 - event_bot - INFO - 📉 Teamgröße verringert: Admin saberrider hat die Größe von Team 'gruppe01' von 18 auf 9 verringert
+2025-03-27 12:51:50,483 - event_bot - INFO - DM Benachrichtigung an .walkman112 für Team gruppe01 gesendet
+2025-03-27 12:51:50,483 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:52:43,991 - event_bot - INFO - 👥 Team angemeldet: saberrider hat Team 'saberdasarbeitstier' mit 18 Mitgliedern angemeldet
+2025-03-27 12:52:44,414 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 12:53:00,383 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 051ff0158106c46773280e5448dacecb.
+2025-03-27 12:58:30,787 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 051ff0158106c46773280e5448dacecb.
+2025-03-27 13:00:34,588 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 051ff0158106c46773280e5448dacecb.
+2025-03-27 13:08:49,785 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 051ff0158106c46773280e5448dacecb.
+2025-03-27 13:11:34,893 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 051ff0158106c46773280e5448dacecb.
+--- Log Start: 2025-03-27 13:29:28 ---
+2025-03-27 13:29:28,683 - event_bot - INFO - Logger initialisiert
+2025-03-27 13:29:28,684 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 13:29:28,686 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 13:29:28,688 - event_bot - INFO - Starting bot...
+2025-03-27 13:29:28,689 - discord.client - INFO - logging in using static token
+2025-03-27 13:29:29,246 - event_bot - INFO - Slash commands synced
+2025-03-27 13:29:29,646 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 1644b305475e3fe61d52e95d5cc0c158).
+2025-03-27 13:29:31,653 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 13:29:31,653 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 13:29:31,653 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 13:29:31,687 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 13:29:31,689 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 13:29:31,908 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 13:40:02,080 - event_bot - INFO - 👥 Team angemeldet: leon11345 hat Team 'no 12' mit 12 Mitgliedern angemeldet
+2025-03-27 13:40:02,687 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 13:40:17,225 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: leon11345 (878010605301288990) will Team 'no 12' abmelden (Status: registriert)
+2025-03-27 13:40:17,534 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 13:40:21,535 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 13:40:21,536 - event_bot - INFO - ❌ Team abgemeldet: Benutzer leon11345 hat Team 'no 12' mit 12 Mitgliedern abgemeldet (Grund: Team manuell abgemeldet)
+2025-03-27 13:40:21,683 - event_bot - ERROR - Fehler bei Bestätigung der Team-Abmeldung: This interaction has already been responded to before
+2025-03-27 13:40:39,520 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 13:41:00,284 - event_bot - INFO - 👥 Team angemeldet: leon11345 hat Team 'no' mit 18 Mitgliedern angemeldet
+2025-03-27 13:41:00,725 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 14:06:51,629 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: saberrider (552617940168736770) will Team 'saberdasarbeitstier' abmelden (Status: registriert)
+2025-03-27 14:06:53,972 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 14:06:53,972 - event_bot - INFO - ❌ Team abgemeldet: Benutzer saberrider hat Team 'saberdasarbeitstier' mit 18 Mitgliedern abgemeldet (Grund: Team manuell abgemeldet)
+2025-03-27 14:06:54,191 - event_bot - ERROR - Fehler bei Bestätigung der Team-Abmeldung: This interaction has already been responded to before
+2025-03-27 14:07:22,369 - event_bot - INFO - 👥 Team angemeldet: saberrider hat Team 'abc' mit 5 Mitgliedern angemeldet
+2025-03-27 14:07:22,858 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 14:38:38,561 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 1644b305475e3fe61d52e95d5cc0c158.
+2025-03-27 14:51:13,499 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 1644b305475e3fe61d52e95d5cc0c158.
+2025-03-27 15:36:05,295 - discord.gateway - INFO - Shard ID None has successfully RESUMED session 1644b305475e3fe61d52e95d5cc0c158.
+--- Log Start: 2025-03-27 16:25:04 ---
+2025-03-27 16:25:04,455 - event_bot - INFO - Logger initialisiert
+2025-03-27 16:25:04,457 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 16:25:04,459 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:25:04,461 - event_bot - INFO - Starting bot...
+2025-03-27 16:25:04,462 - discord.client - INFO - logging in using static token
+2025-03-27 16:25:05,026 - event_bot - INFO - Slash commands synced
+2025-03-27 16:25:05,278 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c651c0222050c0f8d03c3d223c420b86).
+2025-03-27 16:25:07,313 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 16:25:07,313 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 16:25:07,314 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 16:25:07,320 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:25:07,322 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 16:25:07,762 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 16:46:22 ---
+2025-03-27 16:46:22,139 - event_bot - INFO - Logger initialisiert
+2025-03-27 16:46:22,139 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 16:46:22,140 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:46:22,143 - event_bot - INFO - Starting bot...
+2025-03-27 16:46:22,143 - discord.client - INFO - logging in using static token
+2025-03-27 16:46:22,802 - event_bot - INFO - Slash commands synced
+2025-03-27 16:46:23,000 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: fedf797e2f944dc8f8276de400ab33f9).
+2025-03-27 16:46:25,009 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 16:46:25,009 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 16:46:25,010 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 16:46:25,018 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:46:25,021 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 16:46:25,276 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 16:47:19 ---
+2025-03-27 16:47:19,656 - event_bot - INFO - Logger initialisiert
+2025-03-27 16:47:19,657 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 16:47:19,658 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:47:19,660 - event_bot - INFO - Starting bot...
+2025-03-27 16:47:19,661 - discord.client - INFO - logging in using static token
+2025-03-27 16:47:20,660 - event_bot - INFO - Slash commands synced
+2025-03-27 16:47:21,020 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 126f1f58f16ad3ea4d5ba22fd856397c).
+2025-03-27 16:47:23,029 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 16:47:23,030 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 16:47:23,030 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 16:47:23,053 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:47:23,055 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 16:47:23,262 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 16:49:20 ---
+2025-03-27 16:49:20,647 - event_bot - INFO - Logger initialisiert
+2025-03-27 16:49:20,648 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 16:49:20,648 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:49:20,650 - event_bot - INFO - Starting bot...
+2025-03-27 16:49:20,650 - discord.client - INFO - logging in using static token
+2025-03-27 16:49:21,134 - event_bot - INFO - Slash commands synced
+2025-03-27 16:49:21,393 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: f6be049cda3dadd5e500ee8c8ac9a81b).
+2025-03-27 16:49:23,400 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 16:49:23,400 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 16:49:23,400 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 16:49:23,434 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:49:23,436 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 16:49:23,645 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 16:49:51 ---
+2025-03-27 16:49:51,445 - event_bot - INFO - Logger initialisiert
+2025-03-27 16:49:51,446 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 16:49:51,446 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:49:51,448 - event_bot - INFO - Starting bot...
+2025-03-27 16:49:51,449 - discord.client - INFO - logging in using static token
+2025-03-27 16:49:52,122 - event_bot - INFO - Slash commands synced
+2025-03-27 16:49:52,343 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: dc83e61f47839e6ceec7f99eac163297).
+2025-03-27 16:49:54,347 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 16:49:54,347 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 16:49:54,348 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 16:49:54,350 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 16:49:54,351 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 16:49:54,687 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 16:52:59,441 - event_bot - INFO - 👤 Admin-Teambearbeitungsprozess gestartet: saberrider (552617940168736770) wählt ein Team zur Bearbeitung
+2025-03-27 16:53:10,459 - event_bot - INFO - 📈 Teamgröße erhöht: Admin saberrider hat die Größe von Team 'abc' von 5 auf 10 erhöht
+2025-03-27 16:53:11,411 - event_bot - INFO - DM Benachrichtigung an saberrider für Team abc gesendet
+2025-03-27 16:53:11,411 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:53:16,585 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 16:53:24,218 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'test1' mit 18 Mitgliedern hinzuzufügen
+2025-03-27 16:53:24,742 - event_bot - INFO - Admin saberrider hat Team test1 mit 18 Personen angemeldet.
+2025-03-27 16:53:24,742 - event_bot - INFO - ✅ Admin saberrider hat Team 'test1' mit 18 Personen angemeldet.
+2025-03-27 16:53:24,919 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:53:32,590 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'test2' mit 18 Mitgliedern hinzuzufügen
+2025-03-27 16:53:32,957 - event_bot - INFO - Admin saberrider hat Team test2 mit 18 Personen angemeldet.
+2025-03-27 16:53:32,957 - event_bot - INFO - ✅ Admin saberrider hat Team 'test2' mit 18 Personen angemeldet.
+2025-03-27 16:53:33,101 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:53:44,722 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'test3' mit 18 Mitgliedern hinzuzufügen
+2025-03-27 16:53:45,047 - event_bot - INFO - Admin saberrider hat Team test3 mit 18 Personen angemeldet.
+2025-03-27 16:53:45,048 - event_bot - INFO - ✅ Admin saberrider hat Team 'test3' mit 18 Personen angemeldet.
+2025-03-27 16:53:45,219 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:54:01,812 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:54:12,145 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: saberrider (552617940168736770) will Team 'abc' abmelden (Status: registriert)
+2025-03-27 16:54:12,310 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:54:16,865 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:54:16,865 - event_bot - INFO - ❌ Team abgemeldet: Benutzer saberrider hat Team 'abc' mit 15 angemeldeten Spielern und 3 auf der Warteliste (insgesamt 18) abgemeldet (Grund: Team manuell abgemeldet)
+2025-03-27 16:54:18,383 - event_bot - INFO - ✅ Team abgemeldet: Team 'abc' (15 angemeldet, 3 auf Warteliste, 18 insgesamt) wurde erfolgreich abgemeldet durch Benutzer saberrider
+2025-03-27 16:57:13,082 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 16:57:17,013 - event_bot - WARNING - Fehler beim Timeout-Handling: 404 Not Found (error code: 10008): Unknown Message
+2025-03-27 16:57:37,723 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 16:57:51,309 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'test1' mit 22 Mitgliedern hinzuzufügen
+--- Log Start: 2025-03-27 20:53:25 ---
+2025-03-27 20:53:25,248 - event_bot - INFO - Logger initialisiert
+2025-03-27 20:53:25,258 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 20:53:25,262 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 20:53:25,270 - event_bot - INFO - Starting bot...
+2025-03-27 20:53:25,276 - discord.client - INFO - logging in using static token
+2025-03-27 20:53:26,198 - event_bot - INFO - Slash commands synced
+2025-03-27 20:53:26,500 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4123d263d3a4edde7bb5e192528a2d4a).
+2025-03-27 20:53:28,515 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 20:53:28,516 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 20:53:28,516 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 20:53:28,522 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 20:53:28,524 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 20:53:28,704 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 20:56:19 ---
+2025-03-27 20:56:19,936 - event_bot - INFO - Logger initialisiert
+2025-03-27 20:56:19,937 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 20:56:19,938 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 20:56:19,939 - event_bot - INFO - Starting bot...
+2025-03-27 20:56:19,940 - discord.client - INFO - logging in using static token
+2025-03-27 20:56:20,813 - event_bot - INFO - Slash commands synced
+2025-03-27 20:56:21,037 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 2dd09b6b6933522483d4464f04aa46e0).
+2025-03-27 20:56:23,049 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 20:56:23,049 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 20:56:23,049 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 20:56:23,075 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 20:56:23,077 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 20:56:23,244 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 20:57:50,973 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 20:58:02,027 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 20:58:17,467 - event_bot - INFO - 📉 Teamgröße verringert: Admin saberrider hat die Größe von Team 'abc' von 15 auf 5 verringert
+2025-03-27 20:58:20,125 - event_bot - INFO - DM Benachrichtigung an saberrider für Team abc gesendet
+2025-03-27 20:58:20,126 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 20:58:20,126 - event_bot - INFO - ⏫ Warteliste verarbeitet: 2 Teams aufgerückt (initiiert von saberrider)
+2025-03-27 20:58:20,631 - event_bot - INFO - 📋 Team 'abc': 3 Mitglieder von der Warteliste aufgerückt
+2025-03-27 20:58:21,068 - event_bot - INFO - 📋 Team 'gruppe01': 7 Mitglieder von der Warteliste aufgerückt
+2025-03-27 20:58:21,237 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:00:27,595 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: saberrider (552617940168736770) will Team 'abc' abmelden (Status: registriert)
+2025-03-27 21:00:27,794 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:00:29,831 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:00:29,831 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:00:29,831 - event_bot - INFO - ⏫ Warteliste verarbeitet: 1 Teams aufgerückt (initiiert von saberrider)
+2025-03-27 21:00:30,289 - event_bot - INFO - 📋 Team 'gruppe01': 2 Mitglieder von der Warteliste aufgerückt
+2025-03-27 21:00:30,446 - event_bot - INFO - ❌ Team abgemeldet: Benutzer saberrider hat Team 'abc' mit 8 angemeldeten Spielern abgemeldet (Grund: Team manuell abgemeldet)
+2025-03-27 21:00:31,240 - event_bot - INFO - ✅ Team abgemeldet: Team 'abc' (8 Spieler) wurde erfolgreich abgemeldet durch Benutzer saberrider
+2025-03-27 21:03:30,003 - event_bot - WARNING - Fehler beim Timeout-Handling: 404 Not Found (error code: 10008): Unknown Message
+--- Log Start: 2025-03-27 21:08:08 ---
+2025-03-27 21:08:08,865 - event_bot - INFO - Logger initialisiert
+2025-03-27 21:08:08,866 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 21:08:08,867 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 21:08:08,869 - event_bot - INFO - Starting bot...
+2025-03-27 21:08:08,869 - discord.client - INFO - logging in using static token
+2025-03-27 21:08:09,487 - event_bot - INFO - Slash commands synced
+2025-03-27 21:08:09,730 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5b2fe2e545a29680afa8e2cbac0dce12).
+2025-03-27 21:08:11,756 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 21:08:11,757 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 21:08:11,758 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 21:08:11,786 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 21:08:11,788 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 21:08:11,995 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-27 21:51:26 ---
+2025-03-27 21:51:26,541 - event_bot - INFO - Logger initialisiert
+2025-03-27 21:51:26,542 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 21:51:26,543 - event_bot - INFO - Data loaded from event_data.pkl
+--- Log Start: 2025-03-27 21:53:31 ---
+2025-03-27 21:53:31,737 - event_bot - INFO - Logger initialisiert
+2025-03-27 21:53:31,738 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-27 21:53:31,739 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 21:53:31,742 - event_bot - INFO - Starting bot...
+2025-03-27 21:53:31,742 - discord.client - INFO - logging in using static token
+2025-03-27 21:53:32,245 - event_bot - INFO - Slash commands synced
+2025-03-27 21:53:32,486 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: a9d7221b6bb73d2395426db319e6a493).
+2025-03-27 21:53:34,493 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-27 21:53:34,493 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-27 21:53:34,494 - event_bot - INFO - Event-Bot gestartet!
+2025-03-27 21:53:34,581 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-27 21:53:34,589 - event_bot - INFO - Channel gefunden: registration
+2025-03-27 21:53:34,780 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-27 21:54:24,313 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 21:54:34,045 - event_bot - INFO - 👤 Admin-Aktion: saberrider versucht, Team 'test6' mit 16 Mitgliedern hinzuzufügen
+2025-03-27 21:54:34,330 - event_bot - INFO - Admin saberrider hat Team test6 teilweise angemeldet: 6 angemeldet, 10 auf Warteliste.
+2025-03-27 21:54:34,331 - event_bot - INFO - ⚠️ Admin saberrider hat Team 'test6' teilweise angemeldet: 6 Mitglieder registriert, 10 auf Warteliste.
+2025-03-27 21:54:34,459 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:55:18,862 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'ich hasse discord' geöffnet
+2025-03-27 21:55:32,101 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:56:03,523 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:56:25,914 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:56:51,180 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: saberrider (552617940168736770) will Team 'test6' abmelden (Status: registriert)
+2025-03-27 21:56:51,393 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-27 21:56:53,304 - event_bot - ERROR - Fehler bei Bestätigung der Team-Abmeldung: This interaction has already been responded to before
+2025-03-27 22:41:41,612 - discord.gateway - INFO - Shard ID None has successfully RESUMED session a9d7221b6bb73d2395426db319e6a493.
