@@ -72,3 +72,389 @@
 2025-03-28 10:47:34,785 - event_bot - INFO - 📋 Team 'bot5': 3 Mitglieder von der Warteliste aufgerückt
 2025-03-28 10:47:35,131 - event_bot - INFO - 📋 Team 'bot666': 1 Mitglieder von der Warteliste aufgerückt
 2025-03-28 10:47:35,442 - event_bot - INFO - Data saved to event_data.pkl
+--- Log Start: 2025-03-28 11:14:26 ---
+2025-03-28 11:14:26,741 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:14:26,742 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:14:26,743 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:14:26,747 - event_bot - INFO - Starting bot...
+2025-03-28 11:14:26,748 - discord.client - INFO - logging in using static token
+2025-03-28 11:14:27,438 - event_bot - INFO - Slash commands synced
+2025-03-28 11:14:27,795 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: ebeaf2f992101a19fe502f008f2e7a2f).
+2025-03-28 11:14:29,801 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:14:29,801 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:14:29,801 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:14:29,808 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:14:29,812 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:14:30,054 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 11:14:48,377 - event_bot - INFO - Slash-Command: /help ausgeführt von saberrider (552617940168736770) in Kanal registration
+2025-03-28 11:14:48,494 - discord.app_commands.tree - ERROR - Ignoring exception in command 'help'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 4050, in help_command
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'help' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+--- Log Start: 2025-03-28 11:16:55 ---
+2025-03-28 11:16:55,857 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:16:55,858 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:16:55,858 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:16:55,861 - event_bot - INFO - Starting bot...
+2025-03-28 11:16:55,862 - discord.client - INFO - logging in using static token
+2025-03-28 11:16:56,872 - event_bot - INFO - Slash commands synced
+2025-03-28 11:16:57,213 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 8c21e34bf1de737abd6b3b1d9e2de191).
+2025-03-28 11:16:59,228 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:16:59,229 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:16:59,229 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:16:59,263 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:16:59,265 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:16:59,473 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 11:25:15 ---
+2025-03-28 11:25:15,253 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:25:15,254 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:25:15,255 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:25:15,258 - event_bot - INFO - Starting bot...
+2025-03-28 11:25:15,258 - discord.client - INFO - logging in using static token
+2025-03-28 11:25:16,478 - event_bot - INFO - Slash commands synced
+2025-03-28 11:25:17,011 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 11b888633c08588fe09c7cde17d29de7).
+2025-03-28 11:25:19,032 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:25:19,032 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:25:19,032 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:25:19,035 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:25:19,038 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:25:19,273 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 11:26:37 ---
+2025-03-28 11:26:37,354 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:26:37,355 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:26:37,356 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:26:37,359 - event_bot - INFO - Starting bot...
+2025-03-28 11:26:37,359 - discord.client - INFO - logging in using static token
+2025-03-28 11:26:38,051 - event_bot - INFO - Slash commands synced
+2025-03-28 11:26:38,431 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 4473061c096a924de72fadf425234ca1).
+2025-03-28 11:26:40,438 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:26:40,439 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:26:40,439 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:26:40,490 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:26:40,493 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:26:40,957 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 11:45:27 ---
+2025-03-28 11:45:27,010 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:45:27,011 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:45:27,011 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:45:27,014 - event_bot - INFO - Starting bot...
+2025-03-28 11:45:27,015 - discord.client - INFO - logging in using static token
+2025-03-28 11:45:27,736 - event_bot - INFO - Slash commands synced
+2025-03-28 11:45:29,503 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 5d64b912be2a6bc7484cc0d866896168).
+2025-03-28 11:45:31,509 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:45:31,509 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:45:31,509 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:45:31,562 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:45:31,565 - event_bot - WARNING - Kein Channel gesetzt. Bitte nutze den Slash-Befehl /set_channel, um einen Channel zu definieren.
+2025-03-28 11:45:31,568 - event_bot - WARNING - Kein Hauptkanal gesetzt. Bitte /set_channel verwenden.
+2025-03-28 11:47:02,565 - event_bot - ERROR - Fehler beim Senden von Feedback: 404 Not Found (error code: 10062): Unknown interaction
+--- Log Start: 2025-03-28 11:49:00 ---
+2025-03-28 11:49:00,954 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:49:00,955 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:49:00,956 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:49:00,960 - event_bot - INFO - Starting bot...
+2025-03-28 11:49:00,960 - discord.client - INFO - logging in using static token
+2025-03-28 11:49:01,658 - event_bot - INFO - Slash commands synced
+2025-03-28 11:49:01,913 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: d18daf3cf2bef82c92b36e3824f3909a).
+2025-03-28 11:49:03,957 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:49:03,958 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:49:03,958 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:49:04,002 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:49:04,005 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:49:04,296 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 11:54:39,794 - discord.app_commands.tree - ERROR - Ignoring exception in command 'team_list'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3930, in team_list
+    await interaction.response.send_message(embed=embed)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'team_list' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-03-28 11:54:50,919 - discord.app_commands.tree - ERROR - Ignoring exception in command 'open_reg'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3767, in open_registration
+    await interaction.response.send_message(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'open_reg' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-03-28 11:55:09,717 - discord.app_commands.tree - ERROR - Ignoring exception in command 'reg'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3739, in register_team
+    success = await update_team_size(interaction, team_name, size)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 2635, in update_team_size
+    await interaction.response.send_message(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'reg' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-03-28 11:55:42,790 - discord.app_commands.tree - ERROR - Ignoring exception in command 'reset_team_assignment'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3812, in reset_team_assignment
+    await interaction.response.send_message(f"{user.display_name} ist keinem Team zugewiesen.")
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'reset_team_assignment' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+2025-03-28 11:55:53,057 - discord.app_commands.tree - ERROR - Ignoring exception in command 'reg'
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 858, in _do_call
+    return await self._callback(interaction, **params)  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/bot.py", line 3739, in register_team
+  File "/home/runner/workspace/bot.py", line 2635, in update_team_size
+    await interaction.response.send_message(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/interactions.py", line 1004, in send_message
+    response = await adapter.create_interaction_response(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/webhook/async_.py", line 224, in request
+    raise NotFound(response, data)
+discord.errors.NotFound: 404 Not Found (error code: 10062): Unknown interaction
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/tree.py", line 1310, in _call
+    await command._invoke_with_namespace(interaction, namespace)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 883, in _invoke_with_namespace
+    return await self._do_call(interaction, transformed_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/discord/app_commands/commands.py", line 876, in _do_call
+    raise CommandInvokeError(self, e) from e
+discord.app_commands.errors.CommandInvokeError: Command 'reg' raised an exception: NotFound: 404 Not Found (error code: 10062): Unknown interaction
+--- Log Start: 2025-03-28 11:56:30 ---
+2025-03-28 11:56:30,444 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:56:30,445 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:56:30,445 - event_bot - INFO - Data loaded from event_data.pkl
+--- Log Start: 2025-03-28 11:56:54 ---
+2025-03-28 11:56:54,169 - event_bot - INFO - Logger initialisiert
+2025-03-28 11:56:54,170 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 11:56:54,171 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:56:54,174 - event_bot - INFO - Starting bot...
+2025-03-28 11:56:54,175 - discord.client - INFO - logging in using static token
+2025-03-28 11:56:54,833 - event_bot - INFO - Slash commands synced
+2025-03-28 11:56:55,153 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c48acd3a220ef401db39332f01bf0116).
+2025-03-28 11:56:57,159 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 11:56:57,159 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 11:56:57,159 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 11:56:57,192 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 11:56:57,195 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 11:56:57,394 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 12:06:06,602 - event_bot - INFO - Slash-Command: /help ausgeführt von saberrider (552617940168736770) in Kanal registration
+2025-03-28 12:06:27,677 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-28 12:06:27,678 - event_bot - INFO - ⬆️ Teamgröße angepasst: Admin saberrider hat die maximale Teamgröße für Event 'Saber the huth' von 18 auf 99 geändert
+2025-03-28 12:10:03,158 - event_bot - INFO - Slash-Command: /event ausgeführt von saberrider (552617940168736770) in Kanal registration
+2025-03-28 12:11:04,220 - discord.gateway - INFO - Shard ID None has successfully RESUMED session c48acd3a220ef401db39332f01bf0116.
+--- Log Start: 2025-03-28 12:14:25 ---
+2025-03-28 12:14:25,846 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:14:25,847 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:14:25,848 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:14:25,851 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:15:49 ---
+2025-03-28 12:15:49,697 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:15:49,698 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:15:49,698 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:15:49,701 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:15:53 ---
+2025-03-28 12:15:53,006 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:15:53,007 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:15:53,008 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:15:53,012 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:16:29 ---
+2025-03-28 12:16:29,827 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:16:29,828 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:16:29,829 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:16:29,833 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:16:33 ---
+2025-03-28 12:16:33,273 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:16:33,273 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:16:33,274 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:16:33,278 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:16:42 ---
+2025-03-28 12:16:42,819 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:16:42,820 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:16:42,821 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:16:42,825 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:17:41 ---
+2025-03-28 12:17:41,181 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:17:41,182 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:17:41,183 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:17:41,187 - event_bot - INFO - Starting bot...
+2025-03-28 12:17:41,187 - discord.client - INFO - logging in using static token
+2025-03-28 12:17:41,955 - event_bot - INFO - Slash commands synced
+2025-03-28 12:17:42,242 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 0852b23fd557a9e85bff3eafd03f15b5).
+2025-03-28 12:17:44,250 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 12:17:44,250 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 12:17:44,250 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 12:17:44,307 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:17:44,311 - event_bot - ERROR - Fehler beim Senden der Nachricht an den Log-Kanal: asyncio.run() cannot be called from a running event loop
+2025-03-28 12:17:44,321 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 12:17:44,819 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 12:17:44,822 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:17:44,825 - event_bot - ERROR - Fehler beim Senden der Nachricht an den Log-Kanal: asyncio.run() cannot be called from a running event loop
+--- Log Start: 2025-03-28 12:18:40 ---
+2025-03-28 12:18:40,669 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:18:40,669 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:18:40,670 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:18:40,673 - event_bot - INFO - Starting bot...
+--- Log Start: 2025-03-28 12:19:31 ---
+2025-03-28 12:19:31,942 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:19:31,942 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:19:31,943 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:19:31,946 - event_bot - INFO - Starting bot...
+2025-03-28 12:19:31,947 - discord.client - INFO - logging in using static token
+2025-03-28 12:19:33,528 - event_bot - INFO - Slash commands synced
+2025-03-28 12:19:33,822 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 311ae7f4cf52f6eddcf408a1bb09e39d).
+2025-03-28 12:19:35,829 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 12:19:35,829 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 12:19:35,830 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 12:19:35,833 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:19:35,837 - event_bot - ERROR - Fehler beim Senden der Nachricht an den Log-Kanal: asyncio.run() cannot be called from a running event loop
+2025-03-28 12:19:35,839 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 12:19:36,044 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 12:19:36,046 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:19:36,049 - event_bot - ERROR - Fehler beim Senden der Nachricht an den Log-Kanal: asyncio.run() cannot be called from a running event loop
+--- Log Start: 2025-03-28 12:20:37 ---
+2025-03-28 12:20:37,530 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:20:37,531 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:20:37,532 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:20:37,535 - event_bot - INFO - Starting bot...
+2025-03-28 12:20:37,535 - discord.client - INFO - logging in using static token
+2025-03-28 12:20:38,304 - event_bot - INFO - Slash commands synced
+2025-03-28 12:20:38,603 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 35a68daa22bc343ebe5f8c47bda31854).
+2025-03-28 12:20:40,619 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 12:20:40,620 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 12:20:40,620 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 12:20:40,653 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:20:40,655 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 12:20:41,070 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 12:25:25 ---
+2025-03-28 12:25:25,997 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:25:25,998 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:25:26,000 - event_bot - INFO - Data loaded from event_data.pkl
+--- Log Start: 2025-03-28 12:27:25 ---
+2025-03-28 12:27:25,241 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:27:25,242 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:27:25,243 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:27:25,246 - event_bot - INFO - Starting bot...
+2025-03-28 12:27:25,246 - discord.client - INFO - logging in using static token
+2025-03-28 12:27:26,133 - event_bot - INFO - Slash commands synced
+2025-03-28 12:27:26,454 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: e6a8e597e2c04ba25f0d29faa648c5af).
+2025-03-28 12:27:28,461 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 12:27:28,461 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 12:27:28,461 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 12:27:28,497 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:27:28,500 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 12:27:28,877 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+--- Log Start: 2025-03-28 12:29:29 ---
+2025-03-28 12:29:29,650 - event_bot - INFO - Logger initialisiert
+2025-03-28 12:29:29,651 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 12:29:29,652 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:29:29,656 - event_bot - INFO - Starting bot...
+2025-03-28 12:29:29,656 - discord.client - INFO - logging in using static token
+2025-03-28 12:29:30,371 - event_bot - INFO - Slash commands synced
+2025-03-28 12:29:30,626 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: 8aa75b52c7bf10deea250e46e8f90d0d).
+2025-03-28 12:29:32,635 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 12:29:32,635 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 12:29:32,635 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 12:29:32,676 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 12:29:32,679 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 12:29:32,936 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 12:30:02,514 - event_bot - WARNING - 🗑️ 2 Nachrichten wurden in Kanal #registration gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:30:02,514 - event_bot - WARNING - 🗑️ 2 Nachrichten wurden in Kanal #registration gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:30:45,234 - event_bot - WARNING - 🗑️ 2 Nachrichten wurden in Kanal #chatlobby gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:30:45,234 - event_bot - WARNING - 🗑️ 2 Nachrichten wurden in Kanal #chatlobby gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:32:05,844 - event_bot - WARNING - 🗑️ 3 Nachrichten wurden in Kanal #log gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:32:05,844 - event_bot - WARNING - 🗑️ 3 Nachrichten wurden in Kanal #log gelöscht durch saberrider (552617940168736770)
+2025-03-28 12:33:05,740 - event_bot - WARNING - 🗑️ 25 Nachrichten wurden in Kanal #registration gelöscht durch saberrider (552617940168736770) - Grund: test
+2025-03-28 12:33:05,740 - event_bot - WARNING - 🗑️ 25 Nachrichten wurden in Kanal #registration gelöscht durch saberrider (552617940168736770) - Grund: test

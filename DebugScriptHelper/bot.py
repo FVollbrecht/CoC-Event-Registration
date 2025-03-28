@@ -1037,7 +1037,7 @@ class TeamRegistrationModal(ui.Modal):
         user_id = str(interaction.user.id)
         
         # Verarbeite die Teamregistrierungslogik
-        team_name = self.team_name.value.strip().lower()  # Normalisiere Teamnamen (Case-insensitive)
+        team_name = self.team_name.value.strip()  # Behalte Originalschreibweise
         
         try:
             size = int(self.team_size.value)
@@ -1057,139 +1057,25 @@ class TeamRegistrationModal(ui.Modal):
             )
             return
         
-        max_team_size = event["max_team_size"]
-        
         # Prüfe, ob der Nutzer bereits einem anderen Team zugewiesen ist (case-insensitive)
-        if user_id in user_team_assignments:
+        if user_id in user_team_assignments and user_team_assignments[user_id].lower() != team_name.lower():
             assigned_team_name = user_team_assignments[user_id]
-            if assigned_team_name.lower() != team_name:
-                await interaction.response.send_message(
-                    f"Du bist bereits dem Team '{assigned_team_name}' zugewiesen. Du kannst nur für ein Team anmelden.",
-                    ephemeral=True
-                )
-                return
-        
-        # Validiere Team-Größe
-        if size <= 0 or size > max_team_size:
             await interaction.response.send_message(
-                f"Die Teamgröße muss zwischen 1 und {max_team_size} liegen.",
+                f"Du bist bereits dem Team '{assigned_team_name}' zugewiesen. Du kannst nur für ein Team anmelden.",
                 ephemeral=True
             )
             return
         
-        # Hole die aktuelle Teamgröße (Event + Warteliste)
-        event_size, waitlist_size, current_total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
+        # Speichere den Benutzer für Benachrichtigungen
+        team_requester[team_name] = interaction.user
         
-        # Berechne die Größenänderung basierend auf der Gesamtgröße
-        size_difference = size - current_total_size
+        # Verwende die zentrale update_team_size Funktion für die eigentliche Logik
+        success = await update_team_size(interaction, team_name, size)
         
-        # Keine Änderung -> frühzeitige Rückkehr
-        if size_difference == 0:
-            await interaction.response.send_message(
-                f"Team {team_name} ist bereits mit insgesamt {current_total_size} Personen angemeldet " +
-                f"({event_size} im Event, {waitlist_size} auf der Warteliste).",
-                ephemeral=True
-            )
-            return
-        
-        # Verringere Teamgröße mit der update_team_size-Funktion
-        if size_difference < 0:
-            await update_team_size(interaction, team_name, size)
-            return
-        
-        # Größenerhöhung - Prüfe verfügbare Slots
-        available_slots = event["max_slots"] - event["slots_used"]
-        
-        # Verwende bereits gefundenen registered_name aus get_team_total_size
-        
-        # Priorität: Erst Event-Slots füllen, dann Warteliste
-        # Fall 1: Genug freie Event-Slots für alle neuen Spieler
-        if size_difference <= available_slots:
-            if registered_name:
-                # Team ist bereits registriert - erhöhe die Größe
-                event["teams"][registered_name] += size_difference
-            else:
-                # Team ist neu - erstelle es
-                event["teams"][team_name] = size_difference
-            
-            # Aktualisiere die belegten Slots
-            event["slots_used"] += size_difference
-            
-            # Nutzer diesem Team zuweisen (behalte Originalschreibweise)
-            user_team_assignments[user_id] = team_name
-            
-            # Speichere für Benachrichtigungen
-            team_requester[team_name] = interaction.user
-            
-            # Log eintragen
-            await send_to_log_channel(
-                f"✅ Team angemeldet/erhöht: {interaction.user.name} hat Team '{team_name}' auf {size} Spieler gesetzt (+{size_difference})",
-                level="INFO",
-                guild=interaction.guild
-            )
-            
-            await interaction.response.send_message(
-                f"Team {team_name} wurde mit insgesamt {size} Spielern angemeldet.",
-                ephemeral=True
-            )
-        
-        # Fall 2: Teilweise Event-Slots, teilweise Warteliste
-        else:
-            # Berechne die Aufteilung
-            event_addition = available_slots
-            waitlist_addition = size_difference - available_slots
-            
-            # Zuerst Event-Slots füllen
-            if registered_name:
-                # Team ist bereits registriert - erhöhe die Größe
-                event["teams"][registered_name] += event_addition
-            else:
-                # Team ist neu - erstelle es
-                event["teams"][team_name] = event_addition
-            
-            event["slots_used"] += event_addition
-            
-            # Wir erstellen immer einen neuen Wartelisteneintrag am Ende der Liste
-            # Dies stellt sicher, dass Teams, die bereits in der Warteschlange sind und mehr Spieler hinzufügen,
-            # fair behandelt werden, indem die neuen Spieler hinten angestellt werden
-            
-            # Generiere eine Team-ID
-            from utils import generate_team_id
-            team_id = generate_team_id(team_name)
-            
-            # Füge einen neuen Eintrag mit Team-ID zur Warteliste hinzu
-            event["waitlist"].append((team_name, waitlist_addition, team_id))
-            waitlist_message = f"{waitlist_addition} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
-            
-            # Nutzer diesem Team zuweisen
-            user_team_assignments[user_id] = team_name
-            
-            # Speichere für Benachrichtigungen
-            team_requester[team_name] = interaction.user
-            
-            # Antwort senden
-            event_text = f"{event_size + event_addition} Spieler sind im Event angemeldet"
-            await interaction.response.send_message(
-                f"Team {team_name} wurde teilweise angemeldet. "
-                f"{event_text} und {waitlist_message}",
-                ephemeral=True
-            )
-            
-            # Log eintragen
-            await send_to_log_channel(
-                f"⚠️ Team teilweise angemeldet: {interaction.user.name} hat Team '{team_name}' mit insgesamt {size} Spielern angemeldet - {event_size + event_addition} im Event, {waitlist_size + waitlist_addition} auf Warteliste",
-                level="INFO",
-                guild=interaction.guild
-            )
-        
-        # Speichere Daten nach jeder Änderung
-        save_data(event_data, channel_id, user_team_assignments)
-        
-        # Update channel with latest event details
-        if channel_id:
-            channel = bot.get_channel(interaction.channel_id)
-            if channel:
-                await send_event_details(channel)
+        if success:
+            # Die Daten werden bereits von update_team_size gespeichert
+            # Die Event-Anzeige wird bereits von update_team_size aktualisiert
+            pass
 
 # Die TeamWaitlistModal-Klasse wurde entfernt, da die Warteliste jetzt automatisch verwaltet wird
 
@@ -3551,16 +3437,10 @@ async def set_channel(interaction: discord.Interaction):
 
 # Event commands
 @bot.tree.command(name="event", description="Erstellt ein neues Event (nur für Orga-Team)")
-@app_commands.describe(
-    name="Name des Events",
-    date="Datum im Format TT.MM.JJJJ",
-    time="Uhrzeit des Events",
-    description="Beschreibung des Events"
-)
-async def create_event(interaction: discord.Interaction, name: str, date: str, time: str, description: str):
+async def create_event_command(interaction: discord.Interaction):
     """Create a new event"""
     # Kommandoausführung loggen
-    logger.info(f"Slash-Command: /event ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name} mit Parametern: name='{name}', date='{date}', time='{time}'")
+    logger.info(f"Slash-Command: /event ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
     
     # Überprüfe Rolle
     if not has_role(interaction.user, ORGANIZER_ROLE):
@@ -3570,6 +3450,71 @@ async def create_event(interaction: discord.Interaction, name: str, date: str, t
             ephemeral=True
         )
         return
+        
+    # Zeige das Modal an
+    modal = EventCreationModal()
+    await interaction.response.send_modal(modal)
+
+class EventCreationModal(ui.Modal):
+    """Modal für die Event-Erstellung"""
+    def __init__(self):
+        super().__init__(title="Event erstellen")
+        
+        # Aktuelles Datum für Platzhalter
+        from datetime import datetime
+        today = datetime.now().strftime("%d.%m.%Y")
+        
+        # Felder für Event-Details
+        self.event_name = ui.TextInput(
+            label="Event-Name",
+            placeholder="Name des Events",
+            default="CoC",
+            required=True,
+            min_length=2,
+            max_length=50
+        )
+        self.add_item(self.event_name)
+        
+        self.event_date = ui.TextInput(
+            label="Datum",
+            placeholder="TT.MM.JJJJ",
+            default=today,
+            required=True
+        )
+        self.add_item(self.event_date)
+        
+        self.event_time = ui.TextInput(
+            label="Uhrzeit",
+            placeholder="HH:MM",
+            default="20:00",
+            required=True
+        )
+        self.add_item(self.event_time)
+        
+        self.event_description = ui.TextInput(
+            label="Beschreibung",
+            placeholder="Details zum Event",
+            required=True,
+            style=discord.TextStyle.paragraph
+        )
+        self.add_item(self.event_description)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        # Extrahiere die Werte aus dem Modal
+        name = self.event_name.value.strip()
+        date = self.event_date.value.strip()
+        time = self.event_time.value.strip()
+        description = self.event_description.value.strip()
+        
+        # Übergebe die Werte an die Event-Erstellungsfunktion
+        await create_event_internal(interaction, name, date, time, description)
+
+
+
+async def create_event_internal(interaction: discord.Interaction, name: str, date: str, time: str, description: str):
+    """Internal function to handle event creation after modal submission"""
+    # Kommandoausführung loggen
+    logger.info(f"Event-Erstellung: {interaction.user.name} ({interaction.user.id}) erstellt Event mit Parametern: name='{name}', date='{date}', time='{time}'")
 
     if get_event():
         await interaction.response.send_message("Es existiert bereits ein aktives Event. Bitte lösche es zuerst mit /delete_event.")
@@ -3629,7 +3574,7 @@ async def delete_event(interaction: discord.Interaction):
     # Überprüfe Rolle
     if not has_role(interaction.user, ORGANIZER_ROLE):
         logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /delete_event ohne ausreichende Berechtigungen zu verwenden")
-        await interaction.response.send_message(
+        await send_feedback(interaction,
             f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können Events löschen.", 
             ephemeral=True
         )
@@ -3637,25 +3582,29 @@ async def delete_event(interaction: discord.Interaction):
 
     event = get_event()
     if not event:
-        await interaction.response.send_message("Es gibt kein aktives Event zum Löschen.")
+        await send_feedback(interaction, "Es gibt kein aktives Event zum Löschen.", ephemeral=True)
         return
     
-    # Speichere den Event-Namen vor dem Löschen für das Log
-    event_name = event.get("name", "Unbekanntes Event")
-    
-    # Event und zugehörige Daten löschen
-    event_data.clear()
-    team_requester.clear()  # Clear the team requester dictionary
-    user_team_assignments.clear()  # Clear the team assignments when deleting an event
-    save_data(event_data, channel_id, user_team_assignments)
-    
-    # Sende Benachrichtigung an den Log-Kanal
-    await send_to_log_channel(
-        f"🗑️ Event '{event_name}' wurde von {interaction.user.name} gelöscht.",
-        guild=interaction.guild
+    # Zeige eine Bestätigungsanfrage mit den Konsequenzen des Löschens
+    embed = discord.Embed(
+        title="⚠️ Event wirklich löschen?",
+        description=f"Bist du sicher, dass du das Event **{event['name']}** löschen möchtest?\n\n"
+                    f"Diese Aktion kann nicht rückgängig gemacht werden! Alle Team-Anmeldungen und Wartelisten-Einträge werden gelöscht.",
+        color=discord.Color.red()
     )
     
-    await interaction.response.send_message("Event erfolgreich gelöscht.")
+    # Details zum Event hinzufügen
+    embed.add_field(
+        name="Event-Details", 
+        value=f"**Name:** {event['name']}\n"
+              f"**Datum:** {event.get('date', 'Nicht angegeben')}\n"
+              f"**Angemeldete Teams:** {len(event['teams'])}\n"
+              f"**Teams auf Warteliste:** {len(event['waitlist'])}"
+    )
+    
+    # Verwende die vorhandene Bestätigungsansicht
+    view = DeleteConfirmationView()
+    await send_feedback(interaction, "", embed=embed, view=view, ephemeral=True)
 
 @bot.tree.command(name="show_event", description="Zeigt das aktuelle Event an")
 async def show_event(interaction: discord.Interaction):
@@ -3743,12 +3692,12 @@ async def register_team(interaction: discord.Interaction, team_name: str, size: 
 
 # Der /wl-Befehl wurde entfernt, da die Warteliste jetzt automatisch vom Bot verwaltet wird
 
-@bot.tree.command(name="open_reg", description="Erhöht die maximale Teamgröße (nur für Orga-Team)")
+@bot.tree.command(name="open_reg", description="Erhöht die maximale Teamgröße oder entfernt die Begrenzung (nur für Orga-Team)")
 async def open_registration(interaction: discord.Interaction):
-    """Increase the maximum team size (admin only)"""
+    """Increases maximum team size or removes the limit (admin only)"""
     # Überprüfe Rolle
     if not has_role(interaction.user, ORGANIZER_ROLE):
-        await interaction.response.send_message(
+        await send_feedback(interaction,
             f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können die Registrierung öffnen.",
             ephemeral=True
         )
@@ -3756,36 +3705,51 @@ async def open_registration(interaction: discord.Interaction):
 
     event = get_event()
     if not event:
-        await interaction.response.send_message("Es gibt derzeit kein aktives Event.")
+        await send_feedback(interaction, "Es gibt derzeit kein aktives Event.")
         return
     
-    if event["max_team_size"] >= EXPANDED_MAX_TEAM_SIZE:
-        await interaction.response.send_message(
-            f"Die maximale Teamgröße ist bereits auf das Maximum von {EXPANDED_MAX_TEAM_SIZE} gesetzt."
-        )
+    current_max_size = event["max_team_size"]
+    new_max_size = None
+    message = ""
+    
+    # Logik für verschiedene Fälle:
+    # Fall 1: Max. Teamgröße ist 9 -> auf 18 erhöhen
+    # Fall 2: Max. Teamgröße ist 18 -> Begrenzung aufheben (99)
+    # Fall 3: Keine Begrenzung mehr -> Nichts tun
+    
+    if current_max_size == DEFAULT_MAX_TEAM_SIZE:
+        # Fall 1: Von 9 auf 18 erhöhen
+        new_max_size = EXPANDED_MAX_TEAM_SIZE
+        message = f"Die maximale Teamgröße wurde auf {new_max_size} erhöht."
+    elif current_max_size == EXPANDED_MAX_TEAM_SIZE:
+        # Fall 2: Begrenzung aufheben (auf 99 setzen)
+        new_max_size = 99  # Praktisch unbegrenzt
+        message = f"Die Begrenzung der Teamgröße wurde aufgehoben. Teams können jetzt beliebig groß sein."
+    else:
+        # Fall 3: Keine Änderung notwendig
+        await send_feedback(interaction, "Die Teamgröße ist bereits unbegrenzt.")
         return
     
-    # Set the expanded team size
-    event["max_team_size"] = EXPANDED_MAX_TEAM_SIZE
+    # Speichere die alte Teamgröße für das Logging
+    old_max_size = event["max_team_size"]
+    
+    # Aktualisiere die maximale Teamgröße
+    event["max_team_size"] = new_max_size
     save_data(event_data, channel_id, user_team_assignments)
     
-    # Log für die Erhöhung der maximalen Teamgröße
-    await send_to_log_channel(
-        f"⬆️ Teamgröße erhöht: Admin {interaction.user.name} hat die maximale Teamgröße für Event '{event['name']}' auf {EXPANDED_MAX_TEAM_SIZE} erhöht",
-        guild=interaction.guild
-    )
+    # Log für die Änderung der maximalen Teamgröße
+    log_message = f"⬆️ Teamgröße angepasst: Admin {interaction.user.name} hat die maximale Teamgröße für Event '{event['name']}' von {old_max_size} auf {new_max_size} geändert"
+    await send_to_log_channel(log_message, guild=interaction.guild)
     
-    await interaction.response.send_message(
-        f"Die maximale Teamgröße wurde auf {EXPANDED_MAX_TEAM_SIZE} erhöht."
-    )
+    # Benutzer-Feedback
+    await send_feedback(interaction, message)
     
-    # Announce in the event channel
+    # Ankündigung im Event-Kanal
     if channel_id:
         channel = bot.get_channel(channel_id)
         if channel:
-            await channel.send(
-                f"📢 **Ankündigung**: Die maximale Teamgröße für das Event '{event['name']}' wurde auf {EXPANDED_MAX_TEAM_SIZE} erhöht!"
-            )
+            channel_message = f"📢 **Ankündigung**: Die maximale Teamgröße für das Event '{event['name']}' wurde angepasst! {message}"
+            await channel.send(channel_message)
             await send_event_details(channel)
 
 @bot.tree.command(name="reset_team_assignment", description="Setzt die Team-Zuweisung eines Nutzers zurück (nur für Orga-Team)")
@@ -4047,7 +4011,7 @@ async def help_command(interaction: discord.Interaction):
             inline=False
         )
     
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await send_feedback(interaction, "", embed=embed, ephemeral=True)
 
 
 
@@ -5056,6 +5020,95 @@ async def import_log_command(interaction: discord.Interaction, append: bool = Tr
             "Zeitüberschreitung beim Warten auf den Datei-Upload. Der Import wurde abgebrochen.",
             ephemeral=True
         )
+
+
+@bot.tree.command(name="clear_messages", description="Löscht die angegebene Anzahl der letzten Nachrichten im Kanal (nur für Orga-Team)")
+@app_commands.describe(
+    count="Anzahl der zu löschenden Nachrichten (max. 100)",
+    reason="Optionaler Grund für die Löschung"
+)
+async def clear_messages_command(interaction: discord.Interaction, count: int, reason: str = None):
+    """Löscht die angegebene Anzahl der letzten Nachrichten im Kanal (Admin-Befehl)"""
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        await send_feedback(interaction, f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können diese Aktion ausführen.", ephemeral=True)
+        return
+    
+    # Validiere die Anzahl der zu löschenden Nachrichten
+    if count <= 0:
+        await send_feedback(interaction, "Die Anzahl der zu löschenden Nachrichten muss größer als 0 sein.", ephemeral=True)
+        return
+    
+    if count > 100:
+        await send_feedback(interaction, "Aus Sicherheitsgründen können maximal 100 Nachrichten gleichzeitig gelöscht werden.", ephemeral=True)
+        return
+    
+    class ClearMessagesConfirmationView(BaseConfirmationView):
+        def __init__(self, count, reason):
+            super().__init__(title="Nachrichten löschen")
+            self.count = count
+            self.reason = reason
+        
+        @ui.button(label="Ja, löschen", style=discord.ButtonStyle.danger)
+        async def confirm_callback(self, interaction: discord.Interaction, button: ui.Button):
+            if self.check_response(interaction):
+                await self.handle_already_responded(interaction)
+                return
+            
+            try:
+                # Muss zuerst mit defer antworten, da das Löschen länger dauern kann
+                await interaction.response.defer(ephemeral=True)
+                
+                # Nachrichten löschen
+                deleted = await interaction.channel.purge(limit=self.count)
+                
+                # Feedback senden
+                reason_text = f" (Grund: {self.reason})" if self.reason else ""
+                await interaction.followup.send(
+                    f"✅ {len(deleted)} Nachrichten wurden gelöscht{reason_text}.",
+                    ephemeral=True
+                )
+                
+                # Log-Eintrag
+                log_message = f"🗑️ {len(deleted)} Nachrichten wurden in Kanal #{interaction.channel.name} gelöscht durch {interaction.user.name} ({interaction.user.id})"
+                if self.reason:
+                    log_message += f" - Grund: {self.reason}"
+                
+                logger.warning(log_message)
+                await send_to_log_channel(log_message, level="WARNING", guild=interaction.guild)
+                
+            except discord.errors.Forbidden:
+                await interaction.followup.send(
+                    "❌ Fehlende Berechtigung zum Löschen von Nachrichten.",
+                    ephemeral=True
+                )
+            except Exception as e:
+                await interaction.followup.send(
+                    f"❌ Fehler beim Löschen der Nachrichten: {e}",
+                    ephemeral=True
+                )
+                logger.error(f"Fehler beim Löschen von Nachrichten: {e}")
+        
+        @ui.button(label="Abbrechen", style=discord.ButtonStyle.secondary)
+        async def cancel_callback(self, interaction: discord.Interaction, button: ui.Button):
+            if self.check_response(interaction):
+                await self.handle_already_responded(interaction)
+                return
+                
+            await send_feedback(interaction, "Löschvorgang abgebrochen.", ephemeral=True)
+    
+    # Bestätigungsdialog anzeigen
+    reason_text = f"\nGrund: **{reason}**" if reason else ""
+    embed = discord.Embed(
+        title="⚠️ Nachrichten löschen?",
+        description=f"Bist du sicher, dass du **{count} Nachrichten** in diesem Kanal löschen möchtest?{reason_text}\n\n"
+                   f"Diese Aktion kann nicht rückgängig gemacht werden!",
+        color=discord.Color.red()
+    )
+    
+    # Erstelle die Bestätigungsansicht
+    view = ClearMessagesConfirmationView(count, reason)
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
 # Start the bot
