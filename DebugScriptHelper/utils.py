@@ -194,15 +194,15 @@ def generate_team_id(team_name):
     Returns:
     - Eine eindeutige ID für das Team (basierend auf Namen und Timestamp)
     """
-    import uuid
+    import hashlib
     import time
     
     # Kombiniere Team-Namen mit aktuellem Timestamp für Eindeutigkeit
     unique_base = f"{team_name}_{int(time.time())}"
-    # Erstelle eine UUID basierend auf diesem String
-    team_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_base))
-    # Verwende nur die ersten 8 Zeichen für eine kürzere ID
-    short_id = team_id.split('-')[0]
+    # Erstelle einen Hash für diesen String
+    team_hash = hashlib.md5(unique_base.encode('utf-8')).hexdigest()
+    # Verwende nur die ersten 10 Zeichen für eine kürzere ID
+    short_id = team_hash[:10]
     
     logger.debug(f"Team-ID generiert: {short_id} für Team '{team_name}'")
     return short_id

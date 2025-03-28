@@ -1897,3 +1897,25 @@ BENUTZER-TEAM-ZUWEISUNGEN (0):
 2025-03-28 13:06:57,865 - event_bot - INFO - 🧪 Test-Suite ausgeführt von saberrider (552617940168736770)
 2025-03-28 13:06:58,594 - event_bot - INFO - Data saved to event_data.pkl
 2025-03-28 13:12:24,595 - event_bot - INFO - 👤 Admin-Panel geöffnet: saberrider (552617940168736770) hat das Admin-Panel für das Event 'Saber the huth' geöffnet
+--- Log Start: 2025-03-28 13:20:26 ---
+2025-03-28 13:20:26,197 - event_bot - INFO - Logger initialisiert
+2025-03-28 13:20:26,198 - discord.client - WARNING - PyNaCl is not installed, voice will NOT be supported
+2025-03-28 13:20:26,202 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 13:20:26,205 - event_bot - INFO - Starting bot...
+2025-03-28 13:20:26,205 - discord.client - INFO - logging in using static token
+2025-03-28 13:20:27,852 - event_bot - INFO - Slash commands synced
+2025-03-28 13:20:28,137 - discord.gateway - INFO - Shard ID None has connected to Gateway (Session ID: c7b3d9513ed70a99e7e4fa321639dcf9).
+2025-03-28 13:20:30,147 - event_bot - INFO - Bot eingeloggt als CoC-RegBot#5619
+2025-03-28 13:20:30,147 - event_bot - INFO - Log-Kanal initialisiert: log (ID: 1353319170451968040)
+2025-03-28 13:20:30,147 - event_bot - INFO - Event-Bot gestartet!
+2025-03-28 13:20:30,154 - event_bot - INFO - Data loaded from event_data.pkl
+2025-03-28 13:20:30,157 - event_bot - INFO - Channel gefunden: registration
+2025-03-28 13:20:30,479 - event_bot - INFO - Hauptkanal initialisiert: registration (731677145214091316)
+2025-03-28 13:30:01,827 - event_bot - INFO - 🔄 Abmeldungsprozess gestartet: Admin saberrider (552617940168736770) will Team 'bot5' abmelden (Status: registriert)
+2025-03-28 13:30:04,842 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-28 13:30:04,843 - event_bot - INFO - Data saved to event_data.pkl
+2025-03-28 13:30:04,843 - event_bot - INFO - ⏫ Warteliste verarbeitet: 2 Teams aufgerückt (initiiert von saberrider)
+2025-03-28 13:30:05,259 - event_bot - INFO - 📋 Team 'bot666': 5 Mitglieder von der Warteliste aufgerückt
+2025-03-28 13:30:06,179 - event_bot - INFO - 📋 Team 'bot69': 5 Mitglieder von der Warteliste aufgerückt
+2025-03-28 13:30:06,364 - event_bot - INFO - ❌ Team abgemeldet: Admin saberrider hat Team 'bot5' mit 18 angemeldeten Spielern abgemeldet (Grund: Team manuell abgemeldet)
+2025-03-28 13:30:07,405 - event_bot - INFO - ✅ Team abgemeldet: Team 'bot5' (18 Spieler) wurde erfolgreich abgemeldet durch Admin saberrider
