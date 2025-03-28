@@ -9,6 +9,7 @@ import logging
 import sys
 import csv
 import io
+import copy
 
 import pickle
 
@@ -4788,11 +4789,13 @@ async def admin_help_command(interaction: discord.Interaction):
     
     # Log-Verwaltungsbefehle
     embed.add_field(
-        name="Log-Verwaltung",
+        name="Log-Verwaltung & System",
         value=(
             "• `/export_log` - Exportiert die Log-Datei zum Download\n"
             "• `/import_log` - Importiert eine Log-Datei in das System\n"
-            "• `/clear_log` - Leert die Log-Datei (erstellt vorher ein Backup)"
+            "• `/clear_log` - Leert die Log-Datei (erstellt vorher ein Backup)\n"
+            "• `/clear_messages` - Löscht Nachrichten im Kanal mit Bestätigungsdialog\n"
+            "• `/test` - Führt die Test-Suite aus (nur für Entwicklung und Debugging)"
         ),
         inline=False
     )
@@ -5110,6 +5113,125 @@ async def clear_messages_command(interaction: discord.Interaction, count: int, r
     view = ClearMessagesConfirmationView(count, reason)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
+
+@bot.tree.command(name="test", description="Führt die Test-Suite aus (nur für Orga-Team)")
+async def test_command(interaction: discord.Interaction):
+    """Führt die Test-Suite aus der Test/test.py auf dem Discord aus"""
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        await send_feedback(interaction, f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können diese Aktion ausführen.", ephemeral=True)
+        return
+    
+    try:
+        # Informiere den Benutzer, dass Tests gestartet werden
+        await send_feedback(
+            interaction,
+            "🧪 **Test-Suite wird gestartet...**\n"
+            "Dies kann einige Sekunden dauern. Die Ergebnisse werden als Datei zurückgesendet.",
+            ephemeral=True
+        )
+        
+        # Importiere test.py Funktionen manuell über sys.path
+        import os
+        current_dir = os.getcwd()
+        test_module_path = os.path.join(current_dir, "Test")
+        sys.path.insert(0, test_module_path)
+        
+        # Import von test-Funktionen
+        try:
+            from test import run_test_suite
+        except ImportError:
+            # Alternative: Direkt auf das Test-Skript zugreifen
+            logger.warning("Konnte run_test_suite nicht importieren, versuche direkten Zugriff")
+            import subprocess
+            
+            def run_test_suite():
+                """Ersatz-Funktion, die das test.py Skript direkt aufruft"""
+                result = subprocess.run(["python", "Test/test.py"], capture_output=True, text=True)
+                if result.returncode != 0:
+                    logger.warning(f"Test-Script beendet mit Exit-Code {result.returncode}")
+                    if result.stderr:
+                        logger.error(f"Test-Fehlermeldung: {result.stderr}")
+                return result.stdout
+        
+        # Stelle globale Variablen für die Daten-Wiederherstellung sicher
+        global event_data, user_team_assignments, channel_id
+        
+        # Sichern der aktuellen Daten
+        event_data_backup = copy.deepcopy(event_data)
+        user_team_assignments_backup = copy.deepcopy(user_team_assignments)
+        
+        # Umleitung der stdout in eine StringIO, um die Ausgabe zu erfassen
+        original_stdout = sys.stdout
+        test_output = io.StringIO()
+        sys.stdout = test_output
+        
+        try:
+            # Führe die Test-Suite aus, aber mit Timeout
+            import threading
+            import time
+            
+            def run_test_with_timeout():
+                try:
+                    run_test_suite()
+                except Exception as e:
+                    logger.error(f"Fehler in der Test-Suite: {e}")
+            
+            # Starte Test in separatem Thread
+            test_thread = threading.Thread(target=run_test_with_timeout)
+            test_thread.daemon = True
+            test_thread.start()
+            
+            # Warte maximal 30 Sekunden
+            test_thread.join(timeout=30)
+            
+            # Prüfe, ob der Test noch läuft
+            if test_thread.is_alive():
+                logger.warning("Test-Suite Timeout nach 30 Sekunden - Test wird abgebrochen")
+                # Test-Ausgabe trotzdem abrufen
+                output = test_output.getvalue() + "\n\n*** TIMEOUT: Test wurde nach 30 Sekunden abgebrochen! ***"
+            else:
+                # Test-Ausgabe abrufen
+                output = test_output.getvalue()
+            
+            # Loggen des Ergebnisses
+            logger.info(f"Test-Suite ausgeführt von {interaction.user.name} ({interaction.user.id})")
+            
+            # Ausgabe für Log hinzufügen
+            log_message = f"🧪 Test-Suite ausgeführt von {interaction.user.name} ({interaction.user.id})"
+            await send_to_log_channel(log_message, level="INFO", guild=interaction.guild)
+            
+            # Erstelle eine temporäre Datei mit den Testergebnissen
+            buffer = io.BytesIO(output.encode('utf-8'))
+            buffer.seek(0)
+            
+            # Sende die Datei als Attachment
+            file = discord.File(fp=buffer, filename="test_results.txt")
+            await interaction.followup.send(
+                content="✅ **Test-Suite abgeschlossen!**\nHier sind die Ergebnisse:",
+                file=file,
+                ephemeral=True
+            )
+            
+        except Exception as e:
+            # Fehlerbehandlung
+            error_message = f"❌ **Fehler bei der Ausführung der Test-Suite:**\n```{str(e)}```"
+            logger.error(f"Fehler bei der Ausführung der Test-Suite: {e}")
+            await interaction.followup.send(content=error_message, ephemeral=True)
+        finally:
+            # Zurücksetzen von stdout und Wiederherstellung der ursprünglichen Daten
+            sys.stdout = original_stdout
+            event_data = event_data_backup
+            user_team_assignments = user_team_assignments_backup
+            
+            # Speichere die ursprünglichen Daten
+            save_data(event_data, channel_id, user_team_assignments)
+    
+    except Exception as e:
+        # Allgemeine Fehlerbehandlung
+        error_message = f"❌ **Fehler beim Starten der Test-Suite:**\n```{str(e)}```"
+        logger.error(f"Fehler beim Starten der Test-Suite: {e}")
+        await send_feedback(interaction, error_message, ephemeral=True)
 
 # Start the bot
 if __name__ == "__main__":

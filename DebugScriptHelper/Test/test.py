@@ -809,4 +809,23 @@ def run_test_suite():
 
 if __name__ == "__main__":
     # Führe die vollständige Testsuite aus
-    run_test_suite()
+    import sys
+    
+    try:
+        # Option: Nur Testergebnisse zurückgeben
+        if len(sys.argv) > 1 and sys.argv[1] == "--summary-only":
+            print("Führe Tests mit --summary-only aus...")
+            logger.info("Test-Modus: Nur Zusammenfassung")
+        
+        run_test_suite()
+        
+        # Erfolgsmeldung als Bestätigung
+        print("\nTests erfolgreich abgeschlossen.")
+        
+    except Exception as e:
+        logger.error(f"Fehler während der Testausführung: {e}")
+        print(f"FEHLER: {e}")
+        sys.exit(1)
+    
+    # Erfolgreicher Abschluss
+    sys.exit(0)
