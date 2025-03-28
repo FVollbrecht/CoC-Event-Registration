@@ -20,7 +20,8 @@ from config import (
 )
 from utils import (
     load_data, save_data, format_event_details, format_event_list, 
-    has_role, parse_date, logger, send_to_log_channel, discord_handler
+    has_role, parse_date, logger, send_to_log_channel, discord_handler,
+    generate_team_id, export_log_file, clear_log_file, import_log_file
 )
 
 # Check if token is available
@@ -56,13 +57,20 @@ def get_event():
     # Defensive Programmierung: Stelle sicher, dass event_data existiert und ein Dictionary ist
     if not isinstance(event_data, dict):
         logger.error("event_data ist kein Dictionary")
-        return {}
+        return None
     
     # Greife auf den 'event'-Schlüssel in event_data zu
     event = event_data.get('event', {})
     
+    # Prüfe, ob ein Event existiert (mindestens eine gültige Eigenschaft)
+    if not event:
+        return None
+    
+    if not event.get('name') and not event.get('date'):
+        return None
+    
     # Prüfe, ob das Event alle erwarteten Schlüssel hat
-    required_keys = ['name', 'date', 'teams', 'waitlist', 'max_slots', 'slots_used', 'max_team_size']
+    required_keys = ['name', 'date', 'time', 'description', 'teams', 'waitlist', 'max_slots', 'slots_used', 'max_team_size']
     for key in required_keys:
         if key not in event:
             logger.warning(f"Event fehlt Schlüssel: {key}")
@@ -73,7 +81,7 @@ def get_event():
                 event['waitlist'] = []
             elif key in ['max_slots', 'slots_used', 'max_team_size']:
                 event[key] = 0
-            elif key in ['name', 'date']:
+            elif key in ['name', 'date', 'time', 'description']:
                 event[key] = ""
     
     return event
@@ -81,6 +89,880 @@ def get_event():
 def get_user_team(user_id):
     """Get the team name for a user"""
     return user_team_assignments.get(str(user_id))
+
+def get_team_total_size(event, team_name):
+    """
+    Berechnet die Gesamtgröße eines Teams (Event + Warteliste)
+    
+    Parameters:
+    - event: Eventdaten
+    - team_name: Name des Teams (wird als lowercase behandelt)
+    
+    Returns:
+    - Tupel (event_size, waitlist_size, total_size, registered_name, waitlist_entries)
+      - event_size: Größe im Event
+      - waitlist_size: Gesamtgröße auf der Warteliste
+      - total_size: Gesamtgröße (Event + Warteliste)
+      - registered_name: Der tatsächliche Name im Event (oder None)
+      - waitlist_entries: Liste mit Tupeln (index, team_name, size, team_id) aller Wartelisteneinträge für dieses Team
+    """
+    team_name = team_name.strip().lower()  # Normalisiere Teamnamen
+    
+    # Größe und Name im Event (case-insensitive Lookup)
+    event_size = 0
+    registered_name = None
+    team_id = None
+    
+    # Prüfe, ob das Team-Dictionary jetzt das erweiterte Format mit IDs verwendet
+    using_team_ids = False
+    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+        using_team_ids = True
+    
+    if using_team_ids:
+        # Neues Format mit Team-IDs
+        for name, data in event["teams"].items():
+            if name.lower() == team_name:
+                event_size = data.get("size", 0)
+                registered_name = name
+                team_id = data.get("id")
+                break
+    else:
+        # Altes Format (abwärtskompatibel)
+        for name, size in event["teams"].items():
+            if name.lower() == team_name:
+                event_size = size
+                registered_name = name
+                break
+    
+    # Suche alle Einträge des Teams auf der Warteliste
+    waitlist_entries = []
+    waitlist_size = 0
+    
+    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+    using_waitlist_ids = False
+    if event["waitlist"] and len(event["waitlist"][0]) > 2:
+        using_waitlist_ids = True
+    
+    if using_waitlist_ids:
+        # Neues Format mit Team-IDs
+        for i, entry in enumerate(event["waitlist"]):
+            if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                wl_team, wl_size, wl_team_id = entry[0], entry[1], entry[2]
+                if wl_team.lower() == team_name:
+                    waitlist_entries.append((i, wl_team, wl_size, wl_team_id))
+                    waitlist_size += wl_size
+    else:
+        # Altes Format (abwärtskompatibel)
+        for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
+            if wl_team.lower() == team_name:
+                waitlist_entries.append((i, wl_team, wl_size, None))
+                waitlist_size += wl_size
+    
+    # Gesamtgröße
+    total_size = event_size + waitlist_size
+    
+    return (event_size, waitlist_size, total_size, registered_name, waitlist_entries)
+
+# ############################# #
+# NEUE HILFSFUNKTIONEN ######### #
+# ############################# #
+
+async def validate_command_context(interaction, required_role=None, check_event=True, team_required=False):
+    """
+    Validiert den Kontext eines Befehls: Event, Rolle, Team-Zugehörigkeit
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - required_role: Erforderliche Rolle (z.B. ORGANIZER_ROLE oder CLAN_REP_ROLE)
+    - check_event: Ob geprüft werden soll, ob ein Event existiert
+    - team_required: Ob geprüft werden soll, ob der Benutzer einem Team zugewiesen ist
+    
+    Returns:
+    - Tupel (event, team_name) oder (None, None) bei Fehler
+    """
+    # Prüfen, ob ein Event existiert
+    if check_event:
+        event = get_event()
+        if not event:
+            await interaction.response.send_message("Es gibt derzeit kein aktives Event.", ephemeral=True)
+            return None, None
+    else:
+        event = None
+
+    # Rollenprüfung
+    if required_role and not has_role(interaction.user, required_role):
+        await interaction.response.send_message(
+            f"Nur Mitglieder mit der Rolle '{required_role}' können diese Aktion ausführen.",
+            ephemeral=True
+        )
+        return None, None
+
+    # Team-Zugehörigkeit prüfen
+    user_id = str(interaction.user.id)
+    team_name = user_team_assignments.get(user_id)
+    
+    if team_required and not team_name:
+        await interaction.response.send_message(
+            "Du bist keinem Team zugewiesen.",
+            ephemeral=True
+        )
+        return None, None
+        
+    return event, team_name
+
+async def validate_team_size(interaction, team_size, max_team_size, allow_zero=True):
+    """
+    Validiert die Teamgröße gegen die maximale Teamgröße
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - team_size: Die zu prüfende Teamgröße
+    - max_team_size: Die maximale erlaubte Teamgröße
+    - allow_zero: Ob 0 als gültige Größe erlaubt ist (für Abmeldungen)
+    
+    Returns:
+    - True wenn gültig, False sonst
+    """
+    min_size = 0 if allow_zero else 1
+    
+    if team_size < min_size or team_size > max_team_size:
+        await interaction.response.send_message(
+            f"Die Teamgröße muss zwischen {min_size} und {max_team_size} liegen.",
+            ephemeral=True
+        )
+        return False
+    
+    return True
+
+async def send_feedback(interaction, message, ephemeral=True, embed=None, view=None):
+    """
+    Sendet standardisiertes Feedback an den Benutzer
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - message: Die zu sendende Nachricht
+    - ephemeral: Ob die Nachricht nur für den Benutzer sichtbar sein soll
+    - embed: Optional - Ein Discord-Embed zur Anzeige
+    - view: Optional - Eine View mit Buttons/anderen UI-Elementen
+    
+    Returns:
+    - True bei erfolgreicher Zustellung
+    """
+    try:
+        if embed:
+            await interaction.response.send_message(message, embed=embed, ephemeral=ephemeral, view=view)
+        else:
+            await interaction.response.send_message(message, ephemeral=ephemeral, view=view)
+        return True
+    except Exception as e:
+        logger.error(f"Fehler beim Senden von Feedback: {e}")
+        return False
+
+async def handle_team_unregistration(interaction, team_name, is_admin=False):
+    """
+    Verarbeitet die Abmeldung eines Teams
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - team_name: Name des Teams
+    - is_admin: Ob die Aktion von einem Admin durchgeführt wird
+    
+    Returns:
+    - True bei erfolgreicher Abmeldung
+    """
+    event = get_event()
+    if not event:
+        return False
+        
+    team_name = team_name.strip().lower()
+    
+    # Prüfe, ob das Team angemeldet ist oder auf der Warteliste steht
+    team_registered = False
+    team_on_waitlist = False
+    waitlist_indices = []
+    
+    # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+    using_team_ids = False
+    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+        using_team_ids = True
+    
+    if using_team_ids:
+        # Neues Format mit Team-IDs
+        for name in list(event["teams"].keys()):
+            if name.lower() == team_name:
+                team_registered = True
+                break
+    else:
+        # Altes Format
+        for name in list(event["teams"].keys()):
+            if name.lower() == team_name:
+                team_registered = True
+                break
+    
+    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+    using_waitlist_ids = False
+    if event["waitlist"] and len(event["waitlist"][0]) > 2:
+        using_waitlist_ids = True
+    
+    # Suche alle Einträge des Teams auf der Warteliste
+    if using_waitlist_ids:
+        for i, entry in enumerate(event["waitlist"]):
+            if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                if entry[0].lower() == team_name:
+                    team_on_waitlist = True
+                    waitlist_indices.append(i)
+    else:
+        for i, (wl_team, _) in enumerate(event["waitlist"]):
+            if wl_team.lower() == team_name:
+                team_on_waitlist = True
+                waitlist_indices.append(i)
+    
+    if not team_registered and not team_on_waitlist:
+        await send_feedback(
+            interaction,
+            f"Team {team_name} ist weder angemeldet noch auf der Warteliste.",
+            ephemeral=True
+        )
+        return False
+    
+    # Bestätigungsdialog anzeigen
+    embed = discord.Embed(
+        title="⚠️ Team wirklich abmelden?",
+        description=f"Bist du sicher, dass du {'das' if is_admin else 'dein'} Team **{team_name}** abmelden möchtest?\n\n"
+                   f"Diese Aktion kann nicht rückgängig gemacht werden!",
+        color=discord.Color.red()
+    )
+    
+    # Erstelle die Bestätigungsansicht
+    view = TeamUnregisterConfirmationView(team_name, is_admin=is_admin)
+    await send_feedback(interaction, "", ephemeral=True, embed=embed, view=view)
+    
+    # Log für Abmeldebestätigungsdialog
+    status = "registriert" if team_registered else "auf der Warteliste"
+    action_by = "Admin " if is_admin else ""
+    await send_to_log_channel(
+        f"🔄 Abmeldungsprozess gestartet: {action_by}{interaction.user.name} ({interaction.user.id}) will Team '{team_name}' abmelden (Status: {status})",
+        level="INFO",
+        guild=interaction.guild
+    )
+    
+    return True
+
+async def handle_team_size_change(interaction, team_name, old_size, new_size, is_admin=False):
+    """
+    Verarbeitet die Änderung der Teamgröße (Erhöhung oder Verringerung)
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - team_name: Name des Teams
+    - old_size: Aktuelle Teamgröße
+    - new_size: Neue Teamgröße
+    - is_admin: Ob die Aktion von einem Admin durchgeführt wird
+    
+    Returns:
+    - Eine Statusnachricht als String
+    """
+    event = get_event()
+    if not event:
+        logger.warning(f"Team-Größenänderung für '{team_name}' fehlgeschlagen: Kein aktives Event")
+        return "Es gibt derzeit kein aktives Event."
+        
+    user_id = str(interaction.user.id)
+    size_difference = new_size - old_size
+    
+    # Loggen der Anfrage zur Team-Größenänderung
+    action_by = "Admin " if is_admin else ""
+    logger.info(f"Team-Größenänderung angefordert: {action_by}{interaction.user.name} ({interaction.user.id}) will Team '{team_name}' von {old_size} auf {new_size} ändern (Diff: {size_difference})")
+    
+    # Keine Änderung
+    if size_difference == 0:
+        logger.debug(f"Team-Größenänderung für '{team_name}' übersprungen: Keine Änderung (Größe bleibt {new_size})")
+        return f"Team {team_name} ist bereits mit {new_size} Personen angemeldet."
+    
+    # Abmeldung (size == 0)
+    if new_size == 0:
+        logger.info(f"Team-Abmeldung erkannt für '{team_name}' (Größe: {old_size})")
+        await handle_team_unregistration(interaction, team_name, is_admin)
+        return None  # Rückgabe erfolgt in handle_team_unregistration
+    
+    # Teamgröße erhöhen
+    if size_difference > 0:
+        # Check if enough slots are available
+        if event["slots_used"] + size_difference > event["max_slots"]:
+            available_slots = event["max_slots"] - event["slots_used"]
+            if available_slots > 0:
+                # Teilweise anmelden und Rest auf Warteliste
+                waitlist_size = size_difference - available_slots
+                
+                # Aktualisiere die angemeldete Teamgröße
+                event["slots_used"] += available_slots
+                
+                # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+                using_team_ids = False
+                if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+                    using_team_ids = True
+                
+                if using_team_ids:
+                    # Neues Format mit Team-IDs
+                    for name, data in event["teams"].items():
+                        if name.lower() == team_name.lower():
+                            event["teams"][name]["size"] = data.get("size", 0) + available_slots
+                            break
+                else:
+                    # Altes Format
+                    for name in event["teams"]:
+                        if name.lower() == team_name.lower():
+                            event["teams"][name] = old_size + available_slots
+                            break
+                
+                # Füge Rest zur Warteliste hinzu
+                # Generiere eine Team-ID, falls noch nicht vorhanden
+                team_id = None
+                for name, data in event["teams"].items():
+                    if name.lower() == team_name.lower():
+                        if isinstance(data, dict) and "id" in data:
+                            team_id = data["id"]
+                        break
+                
+                if team_id is None:
+                    from utils import generate_team_id
+                    team_id = generate_team_id(team_name)
+                
+                # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+                using_waitlist_ids = False
+                if event["waitlist"] and len(event["waitlist"][0]) > 2:
+                    using_waitlist_ids = True
+                
+                if using_waitlist_ids:
+                    event["waitlist"].append((team_name, waitlist_size, team_id))
+                else:
+                    event["waitlist"].append((team_name, waitlist_size))
+                
+                # Nutzer diesem Team zuweisen
+                user_team_assignments[user_id] = team_name
+                
+                # Speichere für Benachrichtigungen
+                team_requester[team_name] = interaction.user
+                
+                return (f"Team {team_name} wurde teilweise angemeldet. "
+                        f"{old_size + available_slots} Spieler sind angemeldet und "
+                        f"{waitlist_size} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])}).")
+            else:
+                # Komplett auf Warteliste setzen
+                # Generiere eine Team-ID
+                from utils import generate_team_id
+                team_id = generate_team_id(team_name)
+                
+                # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+                using_waitlist_ids = False
+                if event["waitlist"] and len(event["waitlist"][0]) > 2:
+                    using_waitlist_ids = True
+                
+                if using_waitlist_ids:
+                    event["waitlist"].append((team_name, new_size, team_id))
+                else:
+                    event["waitlist"].append((team_name, new_size))
+                
+                # Nutzer diesem Team zuweisen
+                user_team_assignments[user_id] = team_name
+                
+                # Speichere für Benachrichtigungen
+                team_requester[team_name] = interaction.user
+                
+                return f"Team {team_name} wurde mit {new_size} Personen auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
+        else:
+            # Genügend Plätze vorhanden, normal anmelden
+            event["slots_used"] += size_difference
+            
+            # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+            using_team_ids = False
+            if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+                using_team_ids = True
+            
+            if using_team_ids:
+                # Neues Format mit Team-IDs
+                team_exists = False
+                for name in event["teams"]:
+                    if name.lower() == team_name.lower():
+                        event["teams"][name]["size"] = new_size
+                        team_exists = True
+                        break
+                
+                if not team_exists:
+                    # Team neu anlegen
+                    from utils import generate_team_id
+                    team_id = generate_team_id(team_name)
+                    event["teams"][team_name] = {"size": new_size, "id": team_id}
+            else:
+                # Altes Format
+                team_exists = False
+                for name in event["teams"]:
+                    if name.lower() == team_name.lower():
+                        event["teams"][name] = new_size
+                        team_exists = True
+                        break
+                
+                if not team_exists:
+                    # Team neu anlegen
+                    event["teams"][team_name] = new_size
+            
+            # Assign user to this team
+            user_team_assignments[user_id] = team_name
+            
+            # Log für Team-Anmeldung
+            action_by = "Admin " if is_admin else ""
+            await send_to_log_channel(
+                f"👥 Team angemeldet: {action_by}{interaction.user.name} hat Team '{team_name}' mit {new_size} Mitgliedern angemeldet",
+                guild=interaction.guild
+            )
+            
+            return f"Team {team_name} wurde mit {new_size} Personen angemeldet."
+    else:  # size_difference < 0
+        # Reduce team size
+        event["slots_used"] += size_difference  # Will be negative
+        
+        # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+        using_team_ids = False
+        if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+            using_team_ids = True
+        
+        if using_team_ids:
+            # Neues Format mit Team-IDs
+            for name in event["teams"]:
+                if name.lower() == team_name.lower():
+                    event["teams"][name]["size"] = new_size
+                    break
+        else:
+            # Altes Format
+            for name in event["teams"]:
+                if name.lower() == team_name.lower():
+                    event["teams"][name] = new_size
+                    break
+        
+        result_message = f"Teamgröße für {team_name} wurde auf {new_size} aktualisiert."
+        
+        # Freie Plätze für Warteliste nutzen
+        free_slots = -size_difference
+        await process_waitlist_after_change(interaction, free_slots)
+        
+        return result_message
+
+async def update_event_displays(interaction=None, channel=None):
+    """
+    Aktualisiert alle Event-Anzeigen im Kanal
+    
+    Parameters:
+    - interaction: Optional - Discord-Interaktion (wenn vorhanden)
+    - channel: Optional - Discord-Kanal (wenn keine Interaktion vorhanden)
+    
+    Returns:
+    - True bei Erfolg, False bei Fehler
+    """
+    try:
+        if not channel and interaction:
+            if channel_id:
+                channel = bot.get_channel(channel_id)
+            else:
+                channel = bot.get_channel(interaction.channel_id)
+        
+        if channel:
+            await send_event_details(channel)
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Fehler beim Aktualisieren der Event-Anzeigen: {e}")
+        return False
+
+async def process_waitlist_after_change(interaction, free_slots):
+    """
+    Verarbeitet die Warteliste, nachdem Slots frei geworden sind.
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - free_slots: Anzahl der frei gewordenen Slots
+    """
+    if free_slots <= 0:
+        logger.debug(f"Keine freien Slots verfügbar für Wartelisten-Verarbeitung (free_slots={free_slots})")
+        return
+    
+    event = get_event()
+    if not event:
+        logger.debug("Kein Event gefunden für Wartelisten-Verarbeitung")
+        return
+        
+    if not event.get('waitlist'):
+        logger.debug("Keine Warteliste im Event vorhanden")
+        return
+        
+    logger.info(f"Wartelisten-Verarbeitung gestartet: {free_slots} freie Slots, {len(event['waitlist'])} Teams auf Warteliste")
+    
+    # Solange freie Plätze vorhanden sind und die Warteliste nicht leer ist
+    while free_slots > 0 and event["waitlist"]:
+        # Nehme den ersten Eintrag von der Warteliste
+        # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+        using_waitlist_ids = False
+        if event["waitlist"] and len(event["waitlist"][0]) > 2:
+            using_waitlist_ids = True
+        
+        if using_waitlist_ids:
+            # Neues Format mit Team-IDs
+            entry = event["waitlist"][0]
+            wait_team_name, wait_size, wait_team_id = entry
+        else:
+            # Altes Format
+            wait_team_name, wait_size = event["waitlist"][0]
+            wait_team_id = None
+        
+        # Prüfe, ob das gesamte Team Platz hat
+        if wait_size <= free_slots:
+            # Das ganze Team kann nachrücken
+            # Entferne Team von der Warteliste
+            event["waitlist"].pop(0)
+            
+            # Füge Team zum Event hinzu
+            event["slots_used"] += wait_size
+            free_slots -= wait_size
+            
+            # Prüfe, ob das Team bereits im Event ist (mit anderer Größe)
+            team_in_event = False
+            
+            # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+            using_team_ids = False
+            if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+                using_team_ids = True
+            
+            if using_team_ids:
+                # Neues Format mit Team-IDs
+                for name, data in event["teams"].items():
+                    if name.lower() == wait_team_name.lower():
+                        # Erhöhe die Größe des bestehenden Teams
+                        event["teams"][name]["size"] = data.get("size", 0) + wait_size
+                        team_in_event = True
+                        break
+                
+                if not team_in_event:
+                    # Füge neues Team hinzu
+                    if wait_team_id:
+                        event["teams"][wait_team_name] = {"size": wait_size, "id": wait_team_id}
+                    else:
+                        from utils import generate_team_id
+                        team_id = generate_team_id(wait_team_name)
+                        event["teams"][wait_team_name] = {"size": wait_size, "id": team_id}
+            else:
+                # Altes Format
+                for name in event["teams"]:
+                    if name.lower() == wait_team_name.lower():
+                        # Erhöhe die Größe des bestehenden Teams
+                        event["teams"][name] += wait_size
+                        team_in_event = True
+                        break
+                
+                if not team_in_event:
+                    # Füge neues Team hinzu
+                    event["teams"][wait_team_name] = wait_size
+            
+            # Sende Benachrichtigung an den Team-Leiter
+            await send_team_dm_notification(
+                wait_team_name, 
+                f"🎉 Dein Team **{wait_team_name}** ist von der Warteliste ins Event nachgerückt!"
+            )
+            
+            # Team-Channel mit Benachrichtigung
+            await send_to_log_channel(
+                f"⬆️ Team nachgerückt: '{wait_team_name}' mit {wait_size} Mitgliedern ist von der Warteliste ins Event nachgerückt",
+                guild=interaction.guild
+            )
+        else:
+            # Das Team kann nur teilweise nachrücken
+            # Aktualisiere die Größe auf der Warteliste
+            if using_waitlist_ids:
+                event["waitlist"][0] = (wait_team_name, wait_size - free_slots, wait_team_id)
+            else:
+                event["waitlist"][0] = (wait_team_name, wait_size - free_slots)
+            
+            # Prüfe, ob das Team bereits im Event ist
+            team_in_event = False
+            
+            # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+            using_team_ids = False
+            if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+                using_team_ids = True
+            
+            if using_team_ids:
+                # Neues Format mit Team-IDs
+                for name, data in event["teams"].items():
+                    if name.lower() == wait_team_name.lower():
+                        # Erhöhe die Größe des bestehenden Teams
+                        event["teams"][name]["size"] = data.get("size", 0) + free_slots
+                        team_in_event = True
+                        break
+                
+                if not team_in_event:
+                    # Füge neues Team hinzu
+                    if wait_team_id:
+                        event["teams"][wait_team_name] = {"size": free_slots, "id": wait_team_id}
+                    else:
+                        from utils import generate_team_id
+                        team_id = generate_team_id(wait_team_name)
+                        event["teams"][wait_team_name] = {"size": free_slots, "id": team_id}
+            else:
+                # Altes Format
+                for name in event["teams"]:
+                    if name.lower() == wait_team_name.lower():
+                        # Erhöhe die Größe des bestehenden Teams
+                        event["teams"][name] += free_slots
+                        team_in_event = True
+                        break
+                
+                if not team_in_event:
+                    # Füge neues Team hinzu
+                    event["teams"][wait_team_name] = free_slots
+            
+            # Aktualisiere die belegten Slots
+            event["slots_used"] += free_slots
+            
+            # Sende Benachrichtigung an den Team-Leiter
+            await send_team_dm_notification(
+                wait_team_name, 
+                f"🎉 Teile deines Teams **{wait_team_name}** sind von der Warteliste ins Event nachgerückt! "
+                f"{free_slots} Mitglieder sind jetzt angemeldet, {wait_size - free_slots} bleiben auf der Warteliste."
+            )
+            
+            # Team-Channel mit Benachrichtigung
+            await send_to_log_channel(
+                f"⬆️ Team teilweise nachgerückt: '{wait_team_name}' mit {free_slots} Mitgliedern ist teilweise von der Warteliste ins Event nachgerückt "
+                f"({wait_size - free_slots} bleiben auf der Warteliste)",
+                guild=interaction.guild
+            )
+            
+            # Alle freien Plätze sind belegt
+            free_slots = 0
+    
+    # Aktualisiere die Event-Anzeige
+    await update_event_displays(interaction=interaction)
+
+async def send_team_dm_notification(team_name, message):
+    """
+    Sendet eine DM-Benachrichtigung an den Teamleiter.
+    
+    Parameters:
+    - team_name: Name des Teams
+    - message: Nachricht, die gesendet werden soll
+    """
+    try:
+        # Suche den Team-Requester
+        if team_name in team_requester:
+            user = team_requester[team_name]
+            await user.send(message)
+    except Exception as e:
+        logger.error(f"Fehler beim Senden einer DM an den Teamleiter: {e}")
+
+async def update_team_size(interaction, team_name, new_size, is_admin=False, reason=None):
+    """
+    Aktualisiert die Größe eines Teams und verwaltet die Warteliste entsprechend.
+    Behandelt Teams als Einheit, unabhängig von Event/Warteliste-Platzierung.
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - team_name: Name des Teams
+    - new_size: Neue Teamgröße
+    - is_admin: Ob die Änderung von einem Admin durchgeführt wird
+    - reason: Optionaler Grund für die Änderung (nur für Admins)
+    
+    Returns:
+    - True bei Erfolg, False bei Fehler
+    """
+    event = get_event()
+    if not event:
+        await send_feedback(interaction, "Es gibt derzeit kein aktives Event.", ephemeral=True)
+        return False
+    
+    # Teamgröße validieren
+    if not await validate_team_size(interaction, new_size, event["max_team_size"]):
+        return False
+    
+    # Team-Details abrufen
+    team_name = team_name.strip()
+    event_size, waitlist_size, total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
+    
+    # Team existiert nicht und soll abgemeldet werden
+    if total_size == 0 and new_size == 0:
+        await send_feedback(interaction, f"Team {team_name} ist nicht angemeldet.", ephemeral=True)
+        return False
+    
+    # Keine Änderung
+    if total_size == new_size:
+        await send_feedback(interaction, f"Team {team_name} ist bereits mit {new_size} Spielern angemeldet.", ephemeral=True)
+        return False
+    
+    # Abmeldung
+    if new_size == 0:
+        return await handle_team_unregistration(interaction, team_name, is_admin)
+    
+    # Hier kommt die eigentliche Logik für die Größenänderung
+    if total_size < new_size:
+        # Teamgröße erhöhen
+        size_increase = new_size - total_size
+        
+        # Freie Plätze berechnen
+        free_slots = event["max_slots"] - event["slots_used"]
+        
+        # Wenn genug Platz ist, alle ins Event
+        if free_slots >= size_increase:
+            # Komplett ins Event (entweder neues Team oder Vergrößerung)
+            return await handle_team_size_change(interaction, team_name, total_size, new_size, is_admin)
+        elif free_slots > 0:
+            # Teilweise ins Event, Rest auf Warteliste
+            return await handle_team_size_change(interaction, team_name, total_size, new_size, is_admin)
+        else:
+            # Komplett auf Warteliste
+            return await handle_team_size_change(interaction, team_name, total_size, new_size, is_admin)
+    else:
+        # Teamgröße verringern
+        return await handle_team_size_change(interaction, team_name, total_size, new_size, is_admin)
+    
+    # Wir sollten nie hierher kommen
+    await send_feedback(interaction, "Es ist ein unerwarteter Fehler aufgetreten.", ephemeral=True)
+    return False
+    
+async def admin_add_team(interaction, team_name, size, discord_user_id=None, discord_username=None, force_waitlist=False):
+    """
+    Funktion für Admins, um ein Team hinzuzufügen
+    
+    Parameters:
+    - interaction: Discord-Interaktion
+    - team_name: Name des Teams
+    - size: Größe des Teams
+    - discord_user_id: Optional - Discord-ID des Nutzers, der dem Team zugewiesen wird
+    - discord_username: Optional - Username des Nutzers
+    - force_waitlist: Ob das Team direkt auf die Warteliste gesetzt werden soll
+    
+    Returns:
+    - True bei Erfolg, False bei Fehler
+    """
+    event = get_event()
+    if not event:
+        await send_feedback(interaction, "Es gibt derzeit kein aktives Event.", ephemeral=True)
+        return False
+    
+    # Teamgröße validieren
+    if not await validate_team_size(interaction, size, event["max_team_size"], allow_zero=False):
+        return False
+    
+    team_name = team_name.strip()
+    
+    # Prüfe, ob das Team bereits existiert
+    event_size, waitlist_size, total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
+    
+    if total_size > 0:
+        await send_feedback(
+            interaction, 
+            f"Team {team_name} ist bereits registriert (Event: {event_size}, Warteliste: {waitlist_size}).",
+            ephemeral=True
+        )
+        return False
+    
+    # Wenn ein Discord-Nutzer angegeben wurde, prüfe, ob dieser bereits einem Team zugewiesen ist
+    if discord_user_id:
+        user_id = str(discord_user_id)
+        if user_id in user_team_assignments:
+            assigned_team = user_team_assignments[user_id]
+            await send_feedback(
+                interaction,
+                f"Der Nutzer ist bereits dem Team '{assigned_team}' zugewiesen.",
+                ephemeral=True
+            )
+            return False
+    
+    # Prüfe, ob genug Platz im Event ist (es sei denn, force_waitlist ist True)
+    available_slots = event["max_slots"] - event["slots_used"]
+    
+    if not force_waitlist and available_slots >= size:
+        # Genug Platz im Event - füge Team direkt hinzu
+        # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+        using_team_ids = False
+        if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+            using_team_ids = True
+        
+        if using_team_ids:
+            # Neues Format mit Team-IDs
+            from utils import generate_team_id
+            team_id = generate_team_id(team_name)
+            event["teams"][team_name] = {"size": size, "id": team_id}
+        else:
+            # Altes Format
+            event["teams"][team_name] = size
+        
+        # Aktualisiere die belegten Slots
+        event["slots_used"] += size
+        
+        # Wenn ein Discord-Nutzer angegeben wurde, weise ihn diesem Team zu
+        if discord_user_id:
+            user_id = str(discord_user_id)
+            user_team_assignments[user_id] = team_name
+        
+        # Log eintragen
+        admin_action = f"Admin {interaction.user.name} hat"
+        user_info = ""
+        if discord_username:
+            user_info = f" für Nutzer {discord_username}"
+        
+        await send_to_log_channel(
+            f"👥 Team vom Admin hinzugefügt: {admin_action} Team '{team_name}' mit {size} Spielern{user_info} zum Event hinzugefügt",
+            level="INFO",
+            guild=interaction.guild
+        )
+        
+        await send_feedback(
+            interaction,
+            f"Team {team_name} wurde mit {size} Spielern zum Event hinzugefügt.",
+            ephemeral=True
+        )
+    else:
+        # Nicht genug Platz oder force_waitlist ist True - füge Team zur Warteliste hinzu
+        # Generiere eine Team-ID
+        from utils import generate_team_id
+        team_id = generate_team_id(team_name)
+        
+        # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+        using_waitlist_ids = False
+        if event["waitlist"] and len(event["waitlist"][0]) > 2:
+            using_waitlist_ids = True
+        
+        if using_waitlist_ids:
+            event["waitlist"].append((team_name, size, team_id))
+        else:
+            event["waitlist"].append((team_name, size))
+        
+        # Wenn ein Discord-Nutzer angegeben wurde, weise ihn diesem Team zu
+        if discord_user_id:
+            user_id = str(discord_user_id)
+            user_team_assignments[user_id] = team_name
+        
+        # Log eintragen
+        admin_action = f"Admin {interaction.user.name} hat"
+        user_info = ""
+        if discord_username:
+            user_info = f" für Nutzer {discord_username}"
+        
+        reason = "erzwungen" if force_waitlist else "wegen Platzmangel"
+        
+        await send_to_log_channel(
+            f"👥 Team vom Admin auf Warteliste: {admin_action} Team '{team_name}' mit {size} Spielern{user_info} zur Warteliste hinzugefügt ({reason})",
+            level="INFO",
+            guild=interaction.guild
+        )
+        
+        await send_feedback(
+            interaction,
+            f"Team {team_name} wurde mit {size} Spielern auf die Warteliste gesetzt (Position {len(event['waitlist'])}).",
+            ephemeral=True
+        )
+    
+    # Aktualisiere die Event-Anzeige
+    await update_event_displays(interaction=interaction)
+    
+    return True
 
 # UI-Komponenten
 class TeamRegistrationModal(ui.Modal):
@@ -113,7 +995,7 @@ class TeamRegistrationModal(ui.Modal):
         user_id = str(interaction.user.id)
         
         # Verarbeite die Teamregistrierungslogik
-        team_name = self.team_name.value.strip().lower()
+        team_name = self.team_name.value.strip().lower()  # Normalisiere Teamnamen (Case-insensitive)
         
         try:
             size = int(self.team_size.value)
@@ -135,14 +1017,15 @@ class TeamRegistrationModal(ui.Modal):
         
         max_team_size = event["max_team_size"]
         
-        # Prüfe, ob der Nutzer bereits einem anderen Team zugewiesen ist
-        if user_id in user_team_assignments and user_team_assignments[user_id] != team_name:
-            assigned_team = user_team_assignments[user_id]
-            await interaction.response.send_message(
-                f"Du bist bereits dem Team '{assigned_team}' zugewiesen. Du kannst nur für ein Team anmelden.",
-                ephemeral=True
-            )
-            return
+        # Prüfe, ob der Nutzer bereits einem anderen Team zugewiesen ist (case-insensitive)
+        if user_id in user_team_assignments:
+            assigned_team_name = user_team_assignments[user_id]
+            if assigned_team_name.lower() != team_name:
+                await interaction.response.send_message(
+                    f"Du bist bereits dem Team '{assigned_team_name}' zugewiesen. Du kannst nur für ein Team anmelden.",
+                    ephemeral=True
+                )
+                return
         
         # Validiere Team-Größe
         if size <= 0 or size > max_team_size:
@@ -152,104 +1035,109 @@ class TeamRegistrationModal(ui.Modal):
             )
             return
         
-        # Prüfe, ob genügend Slots verfügbar sind
-        current_size = event["teams"].get(team_name, 0)
-        size_difference = size - current_size
+        # Hole die aktuelle Teamgröße (Event + Warteliste)
+        event_size, waitlist_size, current_total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
         
-        if size_difference > 0:
-            # Prüfe, ob genügend Slots verfügbar sind
-            if event["slots_used"] + size_difference > event["max_slots"]:
-                # Verfügbare Slots berechnen
-                available_slots = event["max_slots"] - event["slots_used"]
-                
-                if available_slots > 0:
-                    # Teilweise anmelden und Rest auf Warteliste setzen
-                    waitlist_size = size_difference - available_slots
-                    
-                    # Aktualisiere die angemeldete Teamgröße
-                    event["slots_used"] += available_slots
-                    event["teams"][team_name] = current_size + available_slots
-                    
-                    # Füge Rest zur Warteliste hinzu
-                    # Prüfe, ob das Team bereits auf der Warteliste steht
-                    team_on_waitlist = False
-                    waitlist_index = -1
-                    waitlist_team_size = 0
-                    
-                    for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
-                        if wl_team == team_name:
-                            team_on_waitlist = True
-                            waitlist_index = i
-                            waitlist_team_size = wl_size
-                            break
-                    
-                    if team_on_waitlist:
-                        # Erhöhe die Größe des Teams auf der Warteliste
-                        event["waitlist"][waitlist_index] = (team_name, waitlist_team_size + waitlist_size)
-                        waitlist_message = f"Die bestehenden {waitlist_team_size} Plätze auf der Warteliste wurden um {waitlist_size} auf {waitlist_team_size + waitlist_size} erhöht."
-                    else:
-                        # Füge das Team zur Warteliste hinzu
-                        event["waitlist"].append((team_name, waitlist_size))
-                        waitlist_message = f"{waitlist_size} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
-                    
-                    # Nutzer diesem Team zuweisen
-                    user_team_assignments[user_id] = team_name
-                    
-                    # Speichere für Benachrichtigungen
-                    team_requester[team_name] = interaction.user
-                    
-                    await interaction.response.send_message(
-                        f"Team {team_name} wurde teilweise angemeldet. "
-                        f"{current_size + available_slots} Spieler sind angemeldet und "
-                        f"{waitlist_message}",
-                        ephemeral=True
-                    )
-                    
-                    # Log eintragen
-                    await send_to_log_channel(
-                        f"⚠️ Team teilweise angemeldet: {interaction.user.name} hat Team '{team_name}' teilweise angemeldet - {current_size + available_slots} Spieler registriert, {waitlist_size} auf Warteliste",
-                        level="INFO",
-                        guild=interaction.guild
-                    )
-                else:
-                    # Empfehlen, die Warteliste zu nutzen
-                    await interaction.response.send_message(
-                        f"Es sind keine Slots mehr verfügbar. Du kannst dein Team mit dem Button 'Warteliste' auf die Warteliste setzen.",
-                        ephemeral=True
-                    )
-                return
+        # Berechne die Größenänderung basierend auf der Gesamtgröße
+        size_difference = size - current_total_size
+        
+        # Keine Änderung -> frühzeitige Rückkehr
+        if size_difference == 0:
+            await interaction.response.send_message(
+                f"Team {team_name} ist bereits mit insgesamt {current_total_size} Personen angemeldet " +
+                f"({event_size} im Event, {waitlist_size} auf der Warteliste).",
+                ephemeral=True
+            )
+            return
+        
+        # Verringere Teamgröße mit der update_team_size-Funktion
+        if size_difference < 0:
+            await update_team_size(interaction, team_name, size)
+            return
+        
+        # Größenerhöhung - Prüfe verfügbare Slots
+        available_slots = event["max_slots"] - event["slots_used"]
+        
+        # Verwende bereits gefundenen registered_name aus get_team_total_size
+        
+        # Priorität: Erst Event-Slots füllen, dann Warteliste
+        # Fall 1: Genug freie Event-Slots für alle neuen Spieler
+        if size_difference <= available_slots:
+            if registered_name:
+                # Team ist bereits registriert - erhöhe die Größe
+                event["teams"][registered_name] += size_difference
+            else:
+                # Team ist neu - erstelle es
+                event["teams"][team_name] = size_difference
             
-            # Genug Slots verfügbar
+            # Aktualisiere die belegten Slots
             event["slots_used"] += size_difference
-            event["teams"][team_name] = size
             
-            # Nutzer diesem Team zuweisen
+            # Nutzer diesem Team zuweisen (behalte Originalschreibweise)
             user_team_assignments[user_id] = team_name
+            
+            # Speichere für Benachrichtigungen
+            team_requester[team_name] = interaction.user
             
             # Log eintragen
             await send_to_log_channel(
-                f"✅ Team angemeldet: {interaction.user.name} hat Team '{team_name}' mit {size} Spielern angemeldet",
+                f"✅ Team angemeldet/erhöht: {interaction.user.name} hat Team '{team_name}' auf {size} Spieler gesetzt (+{size_difference})",
                 level="INFO",
                 guild=interaction.guild
             )
             
             await interaction.response.send_message(
-                f"Team {team_name} wurde mit {size} Personen angemeldet.",
+                f"Team {team_name} wurde mit insgesamt {size} Spielern angemeldet.",
                 ephemeral=True
             )
-        elif size_difference < 0:
-            # Team-Größe reduzieren
-            event["slots_used"] += size_difference  # Wird negativ sein
-            event["teams"][team_name] = size
-            await interaction.response.send_message(
-                f"Teamgröße für {team_name} wurde auf {size} aktualisiert.",
-                ephemeral=True
-            )
+        
+        # Fall 2: Teilweise Event-Slots, teilweise Warteliste
         else:
-            # Größe unverändert
+            # Berechne die Aufteilung
+            event_addition = available_slots
+            waitlist_addition = size_difference - available_slots
+            
+            # Zuerst Event-Slots füllen
+            if registered_name:
+                # Team ist bereits registriert - erhöhe die Größe
+                event["teams"][registered_name] += event_addition
+            else:
+                # Team ist neu - erstelle es
+                event["teams"][team_name] = event_addition
+            
+            event["slots_used"] += event_addition
+            
+            # Wir erstellen immer einen neuen Wartelisteneintrag am Ende der Liste
+            # Dies stellt sicher, dass Teams, die bereits in der Warteschlange sind und mehr Spieler hinzufügen,
+            # fair behandelt werden, indem die neuen Spieler hinten angestellt werden
+            
+            # Generiere eine Team-ID
+            from utils import generate_team_id
+            team_id = generate_team_id(team_name)
+            
+            # Füge einen neuen Eintrag mit Team-ID zur Warteliste hinzu
+            event["waitlist"].append((team_name, waitlist_addition, team_id))
+            waitlist_message = f"{waitlist_addition} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
+            
+            # Nutzer diesem Team zuweisen
+            user_team_assignments[user_id] = team_name
+            
+            # Speichere für Benachrichtigungen
+            team_requester[team_name] = interaction.user
+            
+            # Antwort senden
+            event_text = f"{event_size + event_addition} Spieler sind im Event angemeldet"
             await interaction.response.send_message(
-                f"Team {team_name} ist bereits mit {size} Personen angemeldet.",
+                f"Team {team_name} wurde teilweise angemeldet. "
+                f"{event_text} und {waitlist_message}",
                 ephemeral=True
+            )
+            
+            # Log eintragen
+            await send_to_log_channel(
+                f"⚠️ Team teilweise angemeldet: {interaction.user.name} hat Team '{team_name}' mit insgesamt {size} Spielern angemeldet - {event_size + event_addition} im Event, {waitlist_size + waitlist_addition} auf Warteliste",
+                level="INFO",
+                guild=interaction.guild
             )
         
         # Speichere Daten nach jeder Änderung
@@ -267,7 +1155,7 @@ class TeamEditModal(ui.Modal):
     """Modal zum Bearbeiten der Teamgröße"""
     def __init__(self, team_name, current_size, max_size, is_admin=False):
         super().__init__(title=f"Team {team_name} bearbeiten")
-        self.team_name = team_name
+        self.team_name = team_name.strip()  # Behalte Originalschreibweise für Anzeige
         self.current_size = current_size
         self.is_admin = is_admin
         
@@ -426,7 +1314,7 @@ class AdminTeamCreateModal(ui.Modal):
 
 class BaseView(ui.View):
     """Basis-View für alle Discord-UI-Komponenten mit erweitertem Timeout-Handling und Fehlerbehandlung"""
-    def __init__(self, timeout=180, title="Interaktion"):
+    def __init__(self, timeout=900, title="Interaktion"):
         super().__init__(timeout=timeout)
         self.has_responded = False  # Tracking-Variable für Interaktionen
         self.message = None
@@ -497,14 +1385,14 @@ class BaseView(ui.View):
 
 class BaseConfirmationView(BaseView):
     """Basis-View für alle Bestätigungsdialoge mit Timeout-Handling und Response-Tracking"""
-    def __init__(self, timeout=180, title="Bestätigung"):
+    def __init__(self, timeout=3600, title="Bestätigung"):
         super().__init__(timeout=timeout, title=title)
 
 
 class AdminTeamSelector(BaseView):
     """Auswahl eines Teams für die Bearbeitung durch Admins"""
     def __init__(self, for_removal=False):
-        super().__init__(timeout=60, title="Admin-Teamauswahl")
+        super().__init__(timeout=3600, title="Admin-Teamauswahl")
         self.selected_team = None
         self.for_removal = for_removal  # Flag, ob die Auswahl für die Abmeldung ist
         
@@ -645,7 +1533,7 @@ class AdminTeamSelector(BaseView):
 class EventActionView(BaseView):
     """View mit Buttons für Event-Aktionen"""
     def __init__(self, event, user_has_admin=False, user_has_clan_rep=False, has_team=False, team_name=None):
-        super().__init__(timeout=300, title="Event-Aktionen")  # 5 Minuten Timeout
+        super().__init__(timeout=3600, title="Event-Aktionen")  # 1 Stunde Timeout
         self.team_name = team_name
         
         # Team anmelden Button (nur für Clan-Rep)
@@ -1063,7 +1951,7 @@ class EventActionView(BaseView):
 class AdminActionView(BaseView):
     """View mit Buttons für Admin-Aktionen"""
     def __init__(self):
-        super().__init__(timeout=180, title="Admin-Aktionen")  # 3 Minuten Timeout
+        super().__init__(timeout=3600, title="Admin-Aktionen")  # 1 Stunde Timeout
         
         # Open Registration
         open_reg_button = ui.Button(
@@ -1331,7 +2219,8 @@ class TeamUnregisterConfirmationView(BaseConfirmationView):
     """View für die Bestätigung einer Team-Abmeldung"""
     def __init__(self, team_name, is_admin=False):
         super().__init__(title="Team-Abmeldung")
-        self.team_name = team_name.strip().lower() if team_name else ""
+        self.team_name = team_name.strip() if team_name else ""  # Behalte Originalschreibweise
+        self.team_name_lower = team_name.strip().lower() if team_name else ""  # Lowercase für Vergleiche
         self.is_admin = is_admin
     
     @ui.button(label="Ja, Team abmelden", style=discord.ButtonStyle.danger)
@@ -1373,14 +2262,16 @@ class TeamUnregisterConfirmationView(BaseConfirmationView):
             waitlist_size = 0
             
             if event:
-                # Größe im registrierten Team
-                if self.team_name in event.get("teams", {}):
-                    registered_size = event["teams"][self.team_name]
-                    total_size += registered_size
+                # Größe im registrierten Team (case-insensitive)
+                for reg_team, reg_size in event.get("teams", {}).items():
+                    if reg_team.lower() == self.team_name_lower:
+                        registered_size = reg_size
+                        total_size += registered_size
+                        break
                 
-                # Größe auf der Warteliste
+                # Größe auf der Warteliste (case-insensitive)
                 for wl_team, wl_size in event.get("waitlist", []):
-                    if wl_team == self.team_name:
+                    if wl_team.lower() == self.team_name_lower:
                         waitlist_size = wl_size
                         total_size += waitlist_size
                         break
@@ -1627,10 +2518,11 @@ async def send_team_dm_notification(team_name, message):
     - team_name: Name des Teams
     - message: Nachricht, die gesendet werden soll
     """
-    # Suche nach dem Benutzer, der das Team erstellt hat
+    # Suche nach dem Benutzer, der das Team erstellt hat (case-insensitive)
+    team_name_lower = team_name.lower() if team_name else ""
     team_leader_id = None
     for uid, tname in user_team_assignments.items():
-        if tname == team_name:
+        if tname.lower() == team_name_lower:
             team_leader_id = uid
             break
     
@@ -1650,6 +2542,7 @@ async def send_team_dm_notification(team_name, message):
 async def update_team_size(interaction, team_name, new_size, is_admin=False, reason=None):
     """
     Aktualisiert die Größe eines Teams und verwaltet die Warteliste entsprechend.
+    Behandelt Teams als Einheit, unabhängig von Event/Warteliste-Platzierung.
     
     Parameters:
     - interaction: Discord-Interaktion
@@ -1670,7 +2563,7 @@ async def update_team_size(interaction, team_name, new_size, is_admin=False, rea
         )
         return False
     
-    team_name = team_name.strip().lower()
+    team_name = team_name.strip().lower()  # Normalisiere Teamnamen (Case-insensitive)
     
     try:
         new_size = int(new_size)
@@ -1692,14 +2585,16 @@ async def update_team_size(interaction, team_name, new_size, is_admin=False, rea
     
     user_id = str(interaction.user.id)
     
-    # Prüfe Berechtigungen
-    if not is_admin and (not has_role(interaction.user, CLAN_REP_ROLE) or 
-                          user_team_assignments.get(user_id) != team_name):
-        await interaction.response.send_message(
-            "Du kannst nur dein eigenes Team bearbeiten.",
-            ephemeral=True
-        )
-        return False
+    # Prüfe Berechtigungen für Nicht-Admins
+    if not is_admin:
+        # Prüfe, ob der Nutzer zum Team gehört (case-insensitive)
+        user_team = user_team_assignments.get(user_id, "").lower()
+        if not (has_role(interaction.user, CLAN_REP_ROLE) and user_team == team_name):
+            await interaction.response.send_message(
+                "Du kannst nur dein eigenes Team bearbeiten.",
+                ephemeral=True
+            )
+            return False
     
     max_team_size = event.get("max_team_size", 0)
     
@@ -1718,49 +2613,62 @@ async def update_team_size(interaction, team_name, new_size, is_admin=False, rea
         )
         return False
     
-    # Prüfe, ob das Team angemeldet ist oder auf der Warteliste steht
-    team_registered = team_name in event.get("teams", {})
-    team_on_waitlist = False
-    waitlist_index = -1
-    waitlist_size = 0
+    # Hole alle aktuellen Daten des Teams (Event + Warteliste)
+    event_size, waitlist_size, current_total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
     
-    for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
-        if wl_team == team_name:
-            team_on_waitlist = True
-            waitlist_index = i
-            waitlist_size = wl_size
-            break
-            
+    # Falls waitlist_entries vorhanden sind, für die alte Logik kompatibel machen
+    waitlist_team_name = None
+    waitlist_index = -1
+    if waitlist_entries:
+        # Nimm den ersten Eintrag für die Kompatibilität
+        first_entry = waitlist_entries[0]
+        waitlist_index = first_entry[0]  # Index
+        waitlist_team_name = first_entry[1]  # Team-Name
+    
+    # Prüfe, ob das Team existiert
+    if current_total_size == 0 and new_size > 0:
+        # Neues Team anlegen - sollte nicht über diese Funktion passieren
+        await interaction.response.send_message(
+            f"Team {team_name} existiert nicht. Bitte nutze die Team-Anmeldung, um ein neues Team zu erstellen.",
+            ephemeral=True
+        )
+        return False
+    
     # Wenn Teamgröße 0 ist, Team automatisch abmelden
     if new_size == 0:
-        # Überprüfe, ob das Team sowohl angemeldet als auch auf der Warteliste steht
-        # damit wir die korrekte Gesamtgröße ermitteln können
-        total_size = 0
+        # Entferne Team aus Event und Warteliste
+        if event_size > 0:
+            # Nur exakt diesen Teamnamen entfernen (case-sensitive Lookup im Dict)
+            for registered_name in list(event["teams"].keys()):
+                if registered_name.lower() == team_name:
+                    registered_size = event["teams"].pop(registered_name)
+                    event["slots_used"] -= registered_size
+                    break
+        
+        # Entferne von Warteliste (case-insensitive)
+        if waitlist_size > 0:
+            waitlist_indices_to_remove = []
+            for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
+                if wl_team.lower() == team_name:
+                    waitlist_indices_to_remove.append(i)
+            
+            # Von hinten nach vorne entfernen, um Indizes nicht zu verschieben
+            for i in sorted(waitlist_indices_to_remove, reverse=True):
+                event["waitlist"].pop(i)
+        
+        # Statustext für Nachricht erstellen
         total_size_message = ""
+        if event_size > 0 and waitlist_size > 0:
+            total_size_message = f"mit {event_size} angemeldeten Spielern und {waitlist_size} auf der Warteliste (insgesamt {current_total_size})"
+        elif event_size > 0:
+            total_size_message = f"mit {event_size} angemeldeten Spielern"
+        elif waitlist_size > 0:
+            total_size_message = f"mit {waitlist_size} Spielern auf der Warteliste"
         
-        if team_registered:
-            registered_size = event["teams"].pop(team_name)
-            event["slots_used"] -= registered_size
-            total_size += registered_size
-            total_size_message = f"mit {registered_size} angemeldeten Spielern"
-        
-        # Prüfe, ob das Team auch auf der Warteliste steht
-        if team_on_waitlist:
-            event["waitlist"].pop(waitlist_index)
-            total_size += waitlist_size
-            if total_size_message:
-                total_size_message += f" und {waitlist_size} auf der Warteliste (insgesamt {total_size})"
-            else:
-                total_size_message = f"mit {waitlist_size} Spielern auf der Warteliste"
-        
-        # Wenn kein Größentext gesetzt wurde, nutze die ermittelte Größe
-        if not total_size_message and total_size > 0:
-            total_size_message = f"mit {total_size} Spielern"
-        
-        # Finde alle Benutzer, die diesem Team zugewiesen sind, und entferne sie
+        # Finde alle Benutzer, die diesem Team zugewiesen sind, und entferne sie (case-insensitive)
         users_to_remove = []
         for uid, tname in user_team_assignments.items():
-            if tname == team_name:
+            if tname.lower() == team_name:
                 users_to_remove.append(uid)
         
         for uid in users_to_remove:
@@ -1769,9 +2677,8 @@ async def update_team_size(interaction, team_name, new_size, is_admin=False, rea
         save_data(event_data, channel_id, user_team_assignments)
         
         # Freie Slots für die Warteliste verwenden, wenn Team angemeldet war
-        if team_registered:
-            free_slots = registered_size  # Nur registrierte Plätze freigeben
-            await process_waitlist_after_change(interaction, free_slots)
+        if event_size > 0:
+            await process_waitlist_after_change(interaction, event_size)
         
         # Log für Team-Abmeldung
         admin_or_user = "Admin" if is_admin else "Benutzer"
@@ -1821,197 +2728,219 @@ async def update_team_size(interaction, team_name, new_size, is_admin=False, rea
         
         return True
     
-    # Validiere neue Teamgröße (für Werte > 0)
-    if new_size < 0:
+    # Berechne Größenänderung basierend auf Gesamtgröße
+    size_difference = new_size - current_total_size
+    
+    # Keine Änderung in der Gesamtgröße
+    if size_difference == 0:
         await interaction.response.send_message(
-            "Die Teamgröße kann nicht negativ sein.",
+            f"Die Gesamtgröße von Team {team_name} bleibt unverändert bei {current_total_size} " +
+            f"({event_size} angemeldet, {waitlist_size} auf der Warteliste).",
             ephemeral=True
         )
-        return False
+        return True
     
-    if new_size > max_team_size:
-        await interaction.response.send_message(
-            f"Die maximale Teamgröße beträgt {max_team_size}.",
-            ephemeral=True
-        )
-        return False
-    
-    # Behandle die verschiedenen Fälle
-    if team_registered:
-        current_size = event["teams"][team_name]
-        size_difference = new_size - current_size
+    # 1. FALL: Erhöhung der Teamgröße
+    if size_difference > 0:
+        # Berechne verfügbare Slots im Event
+        available_slots = event["max_slots"] - event["slots_used"]
         
-        if size_difference == 0:
-            # Keine Änderung
-            await interaction.response.send_message(
-                f"Die Teamgröße von {team_name} bleibt unverändert bei {current_size}.",
-                ephemeral=True
-            )
-            return True
+        # Finde den richtigen Teamnamen im Dictionary (case-sensitive lookup)
+        registered_team_name = None
+        for name in event["teams"]:
+            if name.lower() == team_name:
+                registered_team_name = name
+                break
         
-        elif size_difference > 0:
-            # Teamgröße erhöhen
-            available_slots = event["max_slots"] - event["slots_used"]
-            
-            if size_difference <= available_slots:
-                # Genug Plätze verfügbar
+        # Finde den richtigen Teamnamen in der Warteliste
+        waitlist_team_name = None
+        waitlist_index = -1
+        for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
+            if wl_team.lower() == team_name:
+                waitlist_team_name = wl_team
+                waitlist_index = i
+                break
+                
+        # Priorität: Erst Event-Slots füllen, dann Warteliste
+        if size_difference <= available_slots:
+            # Genug freie Slots im Event - alles kann in den Event-Slots untergebracht werden
+            if registered_team_name:
+                # Team bereits registriert - erhöhe die Größe
+                event["teams"][registered_team_name] += size_difference
                 event["slots_used"] += size_difference
-                event["teams"][team_name] = new_size
-                
-                # Log für Teamgröße-Erhöhung
-                admin_or_user = "Admin" if is_admin else "Benutzer"
-                admin_name = getattr(interaction.user, "name", "Unbekannt")
-                log_message = f"📈 Teamgröße erhöht: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' von {current_size} auf {new_size} erhöht"
-                if reason:
-                    log_message += f" (Grund: {reason})"
-                await send_to_log_channel(log_message, guild=interaction.guild)
-                
-                await interaction.response.send_message(
-                    f"Die Teamgröße von {team_name} wurde von {current_size} auf {new_size} erhöht.",
-                    ephemeral=True
-                )
-                
-                # Log für Admins
-                if is_admin and reason:
-                    logger.info(f"Admin {interaction.user.name} hat die Größe von Team {team_name} auf {new_size} gesetzt. Grund: {reason}")
-                
-                # Sende DM an Teamleiter bei Admin-Änderungen
-                if is_admin:
-                    dm_message = f"📈 Die Größe deines Teams **{team_name}** wurde von einem Administrator von {current_size} auf {new_size} erhöht."
-                    if reason:
-                        dm_message += f"\nGrund: {reason}"
-                    
-                    dm_message += f"\n\nFalls du Fragen hast, wende dich bitte an einen Administrator."
-                    await send_team_dm_notification(team_name, dm_message)
             else:
-                # Nicht genug Plätze - Teile das Team auf
-                filled_slots = available_slots
-                waitlist_slots = size_difference - available_slots
-                
-                # Erhöhe die registrierte Teamgröße um die verfügbaren Slots
-                event["slots_used"] += filled_slots
-                event["teams"][team_name] = current_size + filled_slots
-                
-                # Füge die restlichen Spieler zur Warteliste hinzu
-                # Prüfe, ob das Team bereits auf der Warteliste steht
-                if team_on_waitlist:
-                    # Erhöhe die Größe des Teams auf der Warteliste
-                    event["waitlist"][waitlist_index] = (team_name, waitlist_size + waitlist_slots)
-                    waitlist_message = f"Die bestehenden {waitlist_size} Plätze auf der Warteliste wurden um {waitlist_slots} auf {waitlist_size + waitlist_slots} erhöht."
-                else:
-                    # Füge das Team zur Warteliste hinzu
-                    event["waitlist"].append((team_name, waitlist_slots))
-                    waitlist_message = f"{waitlist_slots} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
-                
-                await interaction.response.send_message(
-                    f"Die Teamgröße von {team_name} wurde teilweise erhöht. "
-                    f"{filled_slots} zusätzliche Spieler wurden angemeldet. "
-                    f"{waitlist_message}",
-                    ephemeral=True
-                )
-                
-                # Benachrichtigung im Channel
-                if channel_id:
-                    channel = bot.get_channel(interaction.channel_id)
-                    if channel:
-                        await channel.send(
-                            f"📢 Team {team_name} wurde teilweise erweitert. "
-                            f"{filled_slots} Spieler wurden angemeldet und {waitlist_slots} auf die Warteliste gesetzt."
-                        )
-        
-        else:  # size_difference < 0
-            # Teamgröße verringern
-            event["slots_used"] += size_difference  # Wird negativ sein
-            event["teams"][team_name] = new_size
+                # Team nicht registriert - erstelle es
+                registered_team_name = team_name
+                event["teams"][registered_team_name] = size_difference
+                event["slots_used"] += size_difference
             
-            # Log für Teamgröße-Verringerung
+            # Log für Teamgröße-Erhöhung
             admin_or_user = "Admin" if is_admin else "Benutzer"
             admin_name = getattr(interaction.user, "name", "Unbekannt")
-            log_message = f"📉 Teamgröße verringert: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' von {current_size} auf {new_size} verringert"
+            log_message = f"📈 Teamgröße erhöht: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' von {current_total_size} auf {new_size} erhöht"
             if reason:
                 log_message += f" (Grund: {reason})"
             await send_to_log_channel(log_message, guild=interaction.guild)
             
+            # Nachricht senden
+            event_addition = size_difference
             await interaction.response.send_message(
-                f"Die Teamgröße von {team_name} wurde von {current_size} auf {new_size} verringert.",
+                f"Die Teamgröße von {team_name} wurde von {current_total_size} auf {new_size} erhöht. " +
+                f"{event_addition} Spieler wurden zum Event hinzugefügt.",
                 ephemeral=True
             )
             
-            # Log für Admins
-            if is_admin and reason:
-                logger.info(f"Admin {interaction.user.name} hat die Größe von Team {team_name} auf {new_size} verringert. Grund: {reason}")
-            
-            # Sende DM an Teamleiter bei Admin-Änderungen
+            # Sende DM bei Admin-Änderungen
             if is_admin:
-                dm_message = f"📉 Die Größe deines Teams **{team_name}** wurde von einem Administrator von {current_size} auf {new_size} verringert."
+                dm_message = f"📈 Die Größe deines Teams **{team_name}** wurde von einem Administrator von {current_total_size} auf {new_size} erhöht."
                 if reason:
                     dm_message += f"\nGrund: {reason}"
                 
                 dm_message += f"\n\nFalls du Fragen hast, wende dich bitte an einen Administrator."
                 await send_team_dm_notification(team_name, dm_message)
+        else:
+            # Nicht genug Plätze im Event - fülle Event-Slots, Rest auf Warteliste
+            # Zuerst Event-Slots füllen
+            event_addition = available_slots
+            waitlist_addition = size_difference - available_slots
             
-            # Freie Slots für Teams auf der Warteliste nutzen
-            free_slots = -size_difference
-            await process_waitlist_after_change(interaction, free_slots)
-    
-    elif team_on_waitlist:
-        # Team ist auf der Warteliste
-        size_difference = new_size - waitlist_size
-        
-        if size_difference == 0:
-            # Keine Änderung
+            if registered_team_name:
+                # Team bereits registriert - erhöhe die Größe
+                event["teams"][registered_team_name] += event_addition
+                event["slots_used"] += event_addition
+            else:
+                # Team nicht registriert - erstelle es
+                registered_team_name = team_name
+                event["teams"][registered_team_name] = event_addition
+                event["slots_used"] += event_addition
+            
+            # Dann Warteliste aktualisieren/erstellen
+            if waitlist_team_name:
+                # Team bereits auf Warteliste - erhöhe die Größe
+                new_waitlist_size = waitlist_size + waitlist_addition
+                event["waitlist"][waitlist_index] = (waitlist_team_name, new_waitlist_size)
+                waitlist_message = f"{waitlist_addition} Spieler wurden zur Warteliste hinzugefügt (jetzt {new_waitlist_size})."
+            else:
+                # Team nicht auf Warteliste - füge es hinzu
+                event["waitlist"].append((team_name, waitlist_addition))
+                waitlist_message = f"{waitlist_addition} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
+            
+            # Log für Teamgröße-Erhöhung mit Warteliste
+            admin_or_user = "Admin" if is_admin else "Benutzer"
+            admin_name = getattr(interaction.user, "name", "Unbekannt")
+            log_message = f"📈 Teamgröße erhöht: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' von {current_total_size} auf {new_size} erhöht (Event +{event_addition}, Warteliste +{waitlist_addition})"
+            if reason:
+                log_message += f" (Grund: {reason})"
+            await send_to_log_channel(log_message, guild=interaction.guild)
+            
+            # Nachricht senden
             await interaction.response.send_message(
-                f"Die Teamgröße von {team_name} auf der Warteliste bleibt unverändert bei {waitlist_size}.",
+                f"Die Teamgröße von {team_name} wurde von {current_total_size} auf {new_size} erhöht. " +
+                f"{event_addition} Spieler wurden zum Event hinzugefügt. {waitlist_message}",
                 ephemeral=True
             )
-            return True
+            
+            # Sende DM bei Admin-Änderungen
+            if is_admin:
+                dm_message = f"📈 Die Größe deines Teams **{team_name}** wurde von einem Administrator von {current_total_size} auf {new_size} erhöht. " + \
+                            f"{event_addition} Spieler wurden zum Event hinzugefügt und {waitlist_addition} Spieler auf die Warteliste gesetzt."
+                if reason:
+                    dm_message += f"\nGrund: {reason}"
+                
+                dm_message += f"\n\nFalls du Fragen hast, wende dich bitte an einen Administrator."
+                await send_team_dm_notification(team_name, dm_message)
+    
+    # 2. FALL: Verringerung der Teamgröße
+    else:  # size_difference < 0
+        # Absolute Größe der Reduktion
+        reduction = abs(size_difference)
         
-        # Aktualisiere die Teamgröße auf der Warteliste
-        event["waitlist"][waitlist_index] = (team_name, new_size)
+        # Priorität: Erst Warteliste reduzieren, dann Event-Slots
+        waitlist_reduction = min(waitlist_size, reduction)
+        event_reduction = reduction - waitlist_reduction
         
-        # Log für Warteliste-Teamgröße-Änderung
+        # Finde den richtigen Teamnamen im Dictionary (case-sensitive lookup)
+        registered_team_name = None
+        for name in event["teams"]:
+            if name.lower() == team_name:
+                registered_team_name = name
+                break
+        
+        # Finde den richtigen Teamnamen in der Warteliste
+        waitlist_team_name = None
+        waitlist_index = -1
+        for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
+            if wl_team.lower() == team_name:
+                waitlist_team_name = wl_team
+                waitlist_index = i
+                break
+        
+        # Erst Warteliste reduzieren
+        if waitlist_reduction > 0 and waitlist_team_name and waitlist_index >= 0:
+            new_waitlist_size = waitlist_size - waitlist_reduction
+            if new_waitlist_size > 0:
+                # Aktualisiere Warteliste
+                event["waitlist"][waitlist_index] = (waitlist_team_name, new_waitlist_size)
+            else:
+                # Entferne von Warteliste
+                event["waitlist"].pop(waitlist_index)
+        
+        # Dann Event-Slots reduzieren, falls nötig
+        if event_reduction > 0 and registered_team_name:
+            new_event_size = event_size - event_reduction
+            if new_event_size > 0:
+                # Aktualisiere Event-Slots
+                event["teams"][registered_team_name] = new_event_size
+                event["slots_used"] -= event_reduction
+            else:
+                # Entferne aus Event
+                event["slots_used"] -= event["teams"].pop(registered_team_name)
+        
+        # Log für Teamgröße-Verringerung
         admin_or_user = "Admin" if is_admin else "Benutzer"
         admin_name = getattr(interaction.user, "name", "Unbekannt")
-        if size_difference > 0:
-            message = f"Die Teamgröße von {team_name} auf der Warteliste wurde von {waitlist_size} auf {new_size} erhöht."
-            log_message = f"📈 Warteliste-Team erhöht: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' auf der Warteliste von {waitlist_size} auf {new_size} erhöht"
-        else:
-            message = f"Die Teamgröße von {team_name} auf der Warteliste wurde von {waitlist_size} auf {new_size} verringert."
-            log_message = f"📉 Warteliste-Team verringert: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' auf der Warteliste von {waitlist_size} auf {new_size} verringert"
+        log_message = f"📉 Teamgröße verringert: {admin_or_user} {admin_name} hat die Größe von Team '{team_name}' von {current_total_size} auf {new_size} verringert"
+        if waitlist_reduction > 0 and event_reduction > 0:
+            log_message += f" (Warteliste -{waitlist_reduction}, Event -{event_reduction})"
+        elif waitlist_reduction > 0:
+            log_message += f" (nur Warteliste -{waitlist_reduction})"
+        elif event_reduction > 0:
+            log_message += f" (nur Event -{event_reduction})"
         
         if reason:
             log_message += f" (Grund: {reason})"
         await send_to_log_channel(log_message, guild=interaction.guild)
         
-        await interaction.response.send_message(
-            message,
-            ephemeral=True
-        )
+        # Nachricht für Benutzer erstellen
+        message = f"Die Teamgröße von {team_name} wurde von {current_total_size} auf {new_size} verringert."
+        if waitlist_reduction > 0 and event_reduction > 0:
+            message += f" Es wurden {waitlist_reduction} Spieler von der Warteliste und {event_reduction} Spieler vom Event entfernt."
+        elif waitlist_reduction > 0:
+            message += f" Es wurden {waitlist_reduction} Spieler von der Warteliste entfernt."
+        elif event_reduction > 0:
+            message += f" Es wurden {event_reduction} Spieler vom Event entfernt."
         
-        # Log für Admins
-        if is_admin and reason:
-            logger.info(f"Admin {interaction.user.name} hat die Größe von Team {team_name} auf der Warteliste auf {new_size} gesetzt. Grund: {reason}")
+        await interaction.response.send_message(message, ephemeral=True)
         
-        # Sende DM an Teamleiter bei Admin-Änderungen
+        # Sende DM bei Admin-Änderungen
         if is_admin:
-            if size_difference > 0:
-                dm_message = f"📈 Die Größe deines Teams **{team_name}** auf der Warteliste wurde von einem Administrator von {waitlist_size} auf {new_size} erhöht."
-            else:
-                dm_message = f"📉 Die Größe deines Teams **{team_name}** auf der Warteliste wurde von einem Administrator von {waitlist_size} auf {new_size} verringert."
+            dm_message = f"📉 Die Größe deines Teams **{team_name}** wurde von einem Administrator von {current_total_size} auf {new_size} verringert."
+            if waitlist_reduction > 0 and event_reduction > 0:
+                dm_message += f" Es wurden {waitlist_reduction} Spieler von der Warteliste und {event_reduction} Spieler vom Event entfernt."
+            elif waitlist_reduction > 0:
+                dm_message += f" Es wurden {waitlist_reduction} Spieler von der Warteliste entfernt."
+            elif event_reduction > 0:
+                dm_message += f" Es wurden {event_reduction} Spieler vom Event entfernt."
             
             if reason:
                 dm_message += f"\nGrund: {reason}"
             
             dm_message += f"\n\nFalls du Fragen hast, wende dich bitte an einen Administrator."
             await send_team_dm_notification(team_name, dm_message)
-    
-    else:
-        # Team existiert nicht
-        await interaction.response.send_message(
-            f"Team {team_name} ist weder angemeldet noch auf der Warteliste.",
-            ephemeral=True
-        )
-        return False
+        
+        # Freie Event-Slots für Teams auf der Warteliste nutzen
+        if event_reduction > 0:
+            await process_waitlist_after_change(interaction, event_reduction)
     
     # Speichere die Änderungen
     save_data(event_data, channel_id, user_team_assignments)
@@ -2472,6 +3401,12 @@ async def check_waitlist_and_expiry():
 
             if not event:
                 continue
+                
+            # Überprüfe, ob expiry_date vorhanden ist
+            if "expiry_date" not in event:
+                # Wenn nicht, überspringen wir die Verfallsprüfung
+                logger.warning("Event hat kein expiry_date, überspringe Verfallsprüfung")
+                continue
 
             # Check for event expiry
             if datetime.now() > event["expiry_date"]:
@@ -2550,8 +3485,12 @@ async def check_waitlist_and_expiry():
 @bot.tree.command(name="set_channel", description="Setzt den aktuellen Channel für Event-Updates")
 async def set_channel(interaction: discord.Interaction):
     """Set the current channel for event updates"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /set_channel ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
     # Überprüfe Berechtigungen
     if not interaction.user.guild_permissions.manage_channels:
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /set_channel ohne ausreichende Berechtigungen zu verwenden")
         await interaction.response.send_message("Du benötigst 'Kanäle verwalten'-Berechtigungen, um diesen Befehl zu nutzen.", ephemeral=True)
         return
         
@@ -2578,8 +3517,12 @@ async def set_channel(interaction: discord.Interaction):
 )
 async def create_event(interaction: discord.Interaction, name: str, date: str, time: str, description: str):
     """Create a new event"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /event ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name} mit Parametern: name='{name}', date='{date}', time='{time}'")
+    
     # Überprüfe Rolle
     if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /event ohne ausreichende Berechtigungen zu verwenden")
         await interaction.response.send_message(
             f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können Events erstellen.",
             ephemeral=True
@@ -2638,8 +3581,12 @@ async def create_event(interaction: discord.Interaction, name: str, date: str, t
 @bot.tree.command(name="delete_event", description="Löscht das aktuelle Event (nur für Orga-Team)")
 async def delete_event(interaction: discord.Interaction):
     """Delete the current event"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /delete_event ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
     # Überprüfe Rolle
     if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /delete_event ohne ausreichende Berechtigungen zu verwenden")
         await interaction.response.send_message(
             f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können Events löschen.", 
             ephemeral=True
@@ -2673,9 +3620,14 @@ async def show_event(interaction: discord.Interaction):
     """Show the current event"""
     event = get_event()
     if not event:
-        await interaction.response.send_message("Es gibt derzeit kein aktives Event.")
+        await interaction.response.send_message("Es gibt derzeit kein aktives Event.", ephemeral=True)
         return
-    # dd
+    
+    # Prüfe, ob es ein echtes Event mit Inhalt ist
+    if not event.get('name') or not event.get('date'):
+        await interaction.response.send_message("Es gibt derzeit kein aktives Event.", ephemeral=True)
+        return
+    
     # Es gibt ein Event, zeige die Details mit Buttons
     await interaction.response.send_message("Hier sind die Event-Details:")
     
@@ -2703,158 +3655,49 @@ async def show_event(interaction: discord.Interaction):
 )
 async def register_team(interaction: discord.Interaction, team_name: str, size: int):
     """Register a team or update team size. Size 0 unregisters the team."""
-    # Überprüfe Rolle
-    if not has_role(interaction.user, CLAN_REP_ROLE):
-        await interaction.response.send_message(
-            f"Nur Mitglieder mit der Rolle '{CLAN_REP_ROLE}' können Teams anmelden.",
-            ephemeral=True
-        )
-        return
-
-    event = get_event()
+    # Validiere den Befehlskontext (Rolle, Event)
+    event, _ = await validate_command_context(interaction, required_role=CLAN_REP_ROLE)
     if not event:
-        await interaction.response.send_message("Es gibt derzeit kein aktives Event.", ephemeral=True)
         return
 
-    team_name = team_name.strip().lower()
-    max_team_size = event.get("max_team_size", 0)
+    # Normalisiere den Team-Namen
+    team_name = team_name.strip()
     user_id = str(interaction.user.id)
 
-    # Check if user is already assigned to another team
-    if user_id in user_team_assignments and user_team_assignments[user_id] != team_name:
+    # Validiere die Teamgröße
+    if not await validate_team_size(interaction, size, event["max_team_size"]):
+        return
+
+    # Prüfe, ob der Nutzer bereits einem anderen Team zugewiesen ist
+    if user_id in user_team_assignments and user_team_assignments[user_id].lower() != team_name.lower():
         assigned_team = user_team_assignments[user_id]
-        await interaction.response.send_message(
+        await send_feedback(
+            interaction,
             f"Du bist bereits dem Team '{assigned_team}' zugewiesen. Du kannst nur für ein Team anmelden.",
             ephemeral=True
         )
         return
 
-    # Validate team size
-    if size < 0 or size > max_team_size:
-        await interaction.response.send_message(
-            f"Die Teamgröße muss zwischen 0 und {max_team_size} liegen.",
-            ephemeral=True
-        )
-        return
-
-    # Remove team if size is 0
+    # Team-Details abrufen (Event + Warteliste)
+    event_size, waitlist_size, total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
+    
+    # Abmeldung (size == 0)
     if size == 0:
-        # Prüfe, ob das Team angemeldet ist oder auf der Warteliste steht
-        team_registered = team_name in event.get("teams", {})
-        team_on_waitlist = False
-        waitlist_index = -1
-        
-        for i, (wl_team, _) in enumerate(event.get("waitlist", [])):
-            if wl_team == team_name:
-                team_on_waitlist = True
-                waitlist_index = i
-                break
-                
-        if team_registered or team_on_waitlist:
-            # Bestätigungsdialog anzeigen
-            embed = discord.Embed(
-                title="⚠️ Team wirklich abmelden?",
-                description=f"Bist du sicher, dass du dein Team **{team_name}** abmelden möchtest?\n\n"
-                           f"Diese Aktion kann nicht rückgängig gemacht werden!",
-                color=discord.Color.red()
-            )
-            
-            # Erstelle die Bestätigungsansicht
-            view = TeamUnregisterConfirmationView(team_name, is_admin=False)
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-            
-            # Log für Abmeldebestätigungsdialog
-            status = "registriert" if team_registered else "auf der Warteliste"
-            await send_to_log_channel(
-                f"🔄 Abmeldungsprozess gestartet: {interaction.user.name} ({interaction.user.id}) will Team '{team_name}' abmelden (Status: {status})",
-                level="INFO",
-                guild=interaction.guild
-            )
-        else:
-            await interaction.response.send_message(
-                f"Team {team_name} ist weder angemeldet noch auf der Warteliste.",
-                ephemeral=True
-            )
-    else:
-        current_size = event["teams"].get(team_name, 0)
-        size_difference = size - current_size
-        
-        # Check if adding or updating
-        if size_difference > 0:
-            # Check if enough slots are available
-            if event["slots_used"] + size_difference > event["max_slots"]:
-                available_slots = event["max_slots"] - event["slots_used"]
-                if available_slots > 0:
-                    # Teilweise anmelden und Rest auf Warteliste
-                    waitlist_size = size_difference - available_slots
-                    
-                    # Aktualisiere die angemeldete Teamgröße
-                    event["slots_used"] += available_slots
-                    event["teams"][team_name] = current_size + available_slots
-                    
-                    # Füge Rest zur Warteliste hinzu
-                    event["waitlist"].append((team_name, waitlist_size))
-                    
-                    # Nutzer diesem Team zuweisen
-                    user_team_assignments[user_id] = team_name
-                    
-                    # Speichere für Benachrichtigungen
-                    team_requester[team_name] = interaction.user
-                    
-                    await interaction.response.send_message(
-                        f"Team {team_name} wurde teilweise angemeldet. "
-                        f"{current_size + available_slots} Spieler sind angemeldet und "
-                        f"{waitlist_size} Spieler wurden auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
-                    )
-                else:
-                    # Komplett auf Warteliste setzen
-                    event["waitlist"].append((team_name, size))
-                    
-                    # Nutzer diesem Team zuweisen
-                    user_team_assignments[user_id] = team_name
-                    
-                    # Speichere für Benachrichtigungen
-                    team_requester[team_name] = interaction.user
-                    
-                    await interaction.response.send_message(
-                        f"Team {team_name} wurde mit {size} Personen auf die Warteliste gesetzt (Position {len(event['waitlist'])})."
-                    )
-            else:
-                # Genügend Plätze vorhanden, normal anmelden
-                event["slots_used"] += size_difference
-                event["teams"][team_name] = size
-                
-                # Assign user to this team
-                user_team_assignments[user_id] = team_name
-                
-                # Log für Team-Anmeldung
-                await send_to_log_channel(
-                    f"👥 Team angemeldet: {interaction.user.name} hat Team '{team_name}' mit {size} Mitgliedern angemeldet",
-                    guild=interaction.guild
-                )
-                
-                await interaction.response.send_message(f"Team {team_name} wurde mit {size} Personen angemeldet.")
-        elif size_difference < 0:
-            # Reduce team size
-            event["slots_used"] += size_difference  # Will be negative
-            event["teams"][team_name] = size
-            await interaction.response.send_message(f"Teamgröße für {team_name} wurde auf {size} aktualisiert.")
-            
-            # Freie Plätze für Warteliste nutzen
-            free_slots = -size_difference
-            await process_waitlist_after_change(interaction, free_slots)
-        else:
-            # Size unchanged
-            await interaction.response.send_message(f"Team {team_name} ist bereits mit {size} Personen angemeldet.")
+        await handle_team_unregistration(interaction, team_name)
+        return
     
-    # Save data after any changes
-    save_data(event_data, channel_id, user_team_assignments)
+    # Nutzer für Benachrichtigungen speichern
+    team_requester[team_name] = interaction.user
     
-    # Update channel with latest event details
-    if channel_id:
-        channel = bot.get_channel(channel_id)
-        if channel:
-            await send_event_details(channel)
+    # Verwende update_team_size für die eigentliche Logik
+    success = await update_team_size(interaction, team_name, size)
+    
+    if success:
+        # Speichere Daten nach jeder Änderung
+        save_data(event_data, channel_id, user_team_assignments)
+        
+        # Aktualisiere die Event-Anzeige
+        await update_event_displays(interaction=interaction)
 
 # Der /wl-Befehl wurde entfernt, da die Warteliste jetzt automatisch vom Bot verwaltet wird
 
@@ -3058,6 +3901,9 @@ async def export_csv(interaction: discord.Interaction):
 @bot.tree.command(name="help", description="Zeigt Hilfe zu den verfügbaren Befehlen")
 async def help_command(interaction: discord.Interaction):
     """Show help information"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /help ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
     # Create help embed
     embed = discord.Embed(
         title="📚 Event-Bot Hilfe",
@@ -3100,6 +3946,8 @@ async def help_command(interaction: discord.Interaction):
                 "• `/delete_event` - Löscht das aktuelle Event\n"
                 "• `/open_reg` - Erhöht die maximale Teamgröße\n"
                 "• `/reset_team_assignment [user]` - Setzt die Team-Zuweisung eines Nutzers zurück\n"
+                "• `/close` - Schließt die Anmeldungen für das Event\n"
+                "• `/open` - Öffnet die Anmeldungen für das Event wieder\n"
                 "• Admin-Menü: Teams verwalten, bearbeiten und hinzufügen\n"
             ),
             inline=False
@@ -3107,122 +3955,14 @@ async def help_command(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-@bot.tree.command(name="wl", description="Setze dein Team auf die Warteliste")
-async def waitlist_command(interaction: discord.Interaction, team_name: str, size: int):
-    """Setzt ein Team auf die Warteliste"""
-    # Hole das aktive Event
-    event = get_event()
-    if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
-        return
-    
-    # Definiere user_id aus der Interaktion
-    user_id = str(interaction.user.id)
-    
-    # Prüfe, ob der Nutzer die Clan-Rep Rolle hat
-    if not has_role(interaction.user, CLAN_REP_ROLE) and not has_role(interaction.user, ORGANIZER_ROLE):
-        await interaction.response.send_message(
-            f"Du benötigst die '{CLAN_REP_ROLE}' Rolle, um ein Team auf die Warteliste zu setzen.",
-            ephemeral=True
-        )
-        return
-    
-    # Prüfe, ob der Nutzer bereits einem anderen Team zugewiesen ist
-    if user_id in user_team_assignments and user_team_assignments[user_id] != team_name:
-        assigned_team = user_team_assignments[user_id]
-        await interaction.response.send_message(
-            f"Du bist bereits dem Team '{assigned_team}' zugewiesen. Du kannst nur für ein Team anmelden.",
-            ephemeral=True
-        )
-        return
-    
-    # Validiere Team-Größe
-    max_team_size = event["max_team_size"]
-    if size <= 0 or size > max_team_size:
-        await interaction.response.send_message(
-            f"Die Teamgröße muss zwischen 1 und {max_team_size} liegen.",
-            ephemeral=True
-        )
-        return
-    
-    # Prüfe, ob das Team schon angemeldet ist
-    if team_name in event["teams"]:
-        await interaction.response.send_message(
-            f"Das Team '{team_name}' ist bereits angemeldet und nicht auf der Warteliste.",
-            ephemeral=True
-        )
-        return
-    
-    # Prüfe, ob das Team bereits auf der Warteliste steht
-    team_on_waitlist = False
-    waitlist_index = -1
-    waitlist_team_size = 0
-    
-    for i, (wl_team, wl_size) in enumerate(event["waitlist"]):
-        if wl_team == team_name:
-            team_on_waitlist = True
-            waitlist_index = i
-            waitlist_team_size = wl_size
-            break
-    
-    if team_on_waitlist:
-        # Team ist bereits auf der Warteliste - aktualisiere die Größe
-        event["waitlist"][waitlist_index] = (team_name, size)
-        await interaction.response.send_message(
-            f"Team '{team_name}' wurde aktualisiert und behält Position {waitlist_index+1} auf der Warteliste mit {size} Spielern.",
-            ephemeral=True
-        )
-        
-        # Log eintragen
-        await send_to_log_channel(
-            f"⏳ Warteliste aktualisiert: {interaction.user.name} hat die Größe von Team '{team_name}' auf der Warteliste auf {size} aktualisiert",
-            level="INFO",
-            guild=interaction.guild
-        )
-    else:
-        # Füge das Team zur Warteliste hinzu
-        event["waitlist"].append((team_name, size))
-        
-        # Speichere Benutzer für Benachrichtigungen
-        team_requester[team_name] = interaction.user
-        
-        # Nutzer diesem Team zuweisen
-        user_team_assignments[user_id] = team_name
-        
-        await interaction.response.send_message(
-            f"Team '{team_name}' wurde zur Warteliste hinzugefügt (Position {len(event['waitlist'])}) mit {size} Spielern.",
-            ephemeral=True
-        )
-        
-        # Log eintragen
-        await send_to_log_channel(
-            f"⏳ Warteliste: {interaction.user.name} hat Team '{team_name}' mit {size} Spielern zur Warteliste hinzugefügt",
-            level="INFO",
-            guild=interaction.guild
-        )
-    
-    # Speichere Daten
-    save_data(event_data, channel_id, user_team_assignments)
-    
-    # Channel aktualisieren
-    if channel_id:
-        channel = bot.get_channel(interaction.channel_id)
-        if channel:
-            await send_event_details(channel)
+
 
 @bot.tree.command(name="unregister", description="Meldet dein Team vom Event ab")
 async def unregister_command(interaction: discord.Interaction, team_name: str = None):
     """Melde dein Team vom Event ab"""
-    # Hole das aktive Event
-    event = get_event()
+    # Validiere den Befehlskontext (Event)
+    event, _ = await validate_command_context(interaction)
     if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
         return
     
     # Definiere user_id aus der Interaktion
@@ -3233,7 +3973,8 @@ async def unregister_command(interaction: discord.Interaction, team_name: str = 
         if user_id in user_team_assignments:
             team_name = user_team_assignments[user_id]
         else:
-            await interaction.response.send_message(
+            await send_feedback(
+                interaction,
                 "Du bist keinem Team zugeordnet und hast keinen Team-Namen angegeben.",
                 ephemeral=True
             )
@@ -3241,47 +3982,31 @@ async def unregister_command(interaction: discord.Interaction, team_name: str = 
     
     # Prüfe Berechtigungen
     is_admin = has_role(interaction.user, ORGANIZER_ROLE)
-    is_assigned_to_team = (user_id in user_team_assignments and user_team_assignments[user_id] == team_name)
+    is_assigned_to_team = (user_id in user_team_assignments and user_team_assignments[user_id].lower() == team_name.lower())
     
     if not is_admin and not is_assigned_to_team:
-        await interaction.response.send_message(
+        await send_feedback(
+            interaction,
             f"Du kannst nur dein eigenes Team abmelden, oder benötigst die '{ORGANIZER_ROLE}' Rolle.",
             ephemeral=True
         )
         return
     
-    # Bestätigungsansicht erstellen
-    view = TeamUnregisterConfirmationView(team_name, is_admin)
-    
-    await interaction.response.send_message(
-        f"Bist du sicher, dass du das Team '{team_name}' abmelden möchtest?",
-        view=view,
-        ephemeral=True
-    )
+    # Verwende handle_team_unregistration für die eigentliche Abmeldungslogik
+    await handle_team_unregistration(interaction, team_name, is_admin)
 
 @bot.tree.command(name="update", description="Aktualisiert die Details des aktuellen Events")
 async def update_command(interaction: discord.Interaction):
     """Aktualisiert die Event-Details im Kanal"""
-    # Nur das Orga-Team darf das ausführen
-    if not has_role(interaction.user, ORGANIZER_ROLE):
-        await interaction.response.send_message(
-            f"Du benötigst die '{ORGANIZER_ROLE}' Rolle, um diese Aktion auszuführen.",
-            ephemeral=True
-        )
-        return
-    
-    # Prüfe, ob ein aktives Event existiert
-    event = get_event()
+    # Validiere den Befehlskontext (Rolle, Event)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE)
     if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
         return
     
     # Prüfe, ob ein Kanal gesetzt wurde
     if not channel_id:
-        await interaction.response.send_message(
+        await send_feedback(
+            interaction,
             "Es wurde noch kein Kanal gesetzt. Bitte verwende /set_channel, um einen Kanal festzulegen.",
             ephemeral=True
         )
@@ -3289,90 +4014,67 @@ async def update_command(interaction: discord.Interaction):
     
     channel = bot.get_channel(channel_id)
     if not channel:
-        await interaction.response.send_message(
+        await send_feedback(
+            interaction,
             "Der gespeicherte Kanal konnte nicht gefunden werden. Bitte setze den Kanal neu mit /set_channel.",
             ephemeral=True
         )
         return
     
     # Aktualisiere die Event-Details im Kanal
-    await send_event_details(channel)
+    success = await update_event_displays(interaction=interaction, channel=channel)
     
-    await interaction.response.send_message(
-        "Die Event-Details wurden im Kanal aktualisiert.",
-        ephemeral=True
-    )
+    if success:
+        await send_feedback(
+            interaction,
+            "Die Event-Details wurden im Kanal aktualisiert.",
+            ephemeral=True
+        )
+    else:
+        await send_feedback(
+            interaction,
+            "Es ist ein Fehler beim Aktualisieren der Event-Details aufgetreten.",
+            ephemeral=True
+        )
 
 @bot.tree.command(name="edit", description="Bearbeitet die Größe deines Teams")
 async def edit_command(interaction: discord.Interaction):
     """Bearbeite die Größe deines Teams"""
-    # Hole das aktive Event
-    event = get_event()
+    # Validiere den Befehlskontext (Event, Team-Zugehörigkeit)
+    event, team_name = await validate_command_context(interaction, team_required=True)
     if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
         return
     
-    # Definiere user_id aus der Interaktion
-    user_id = str(interaction.user.id)
+    # Hole die Team-Details (Event + Warteliste)
+    event_size, waitlist_size, total_size, registered_name, waitlist_entries = get_team_total_size(event, team_name)
     
-    # Prüfe, ob der Nutzer einem Team zugewiesen ist
-    if user_id not in user_team_assignments:
-        await interaction.response.send_message(
-            "Du bist keinem Team zugewiesen und kannst daher keine Teamgröße bearbeiten.",
-            ephemeral=True
-        )
-        return
-    
-    # Hole den Team-Namen
-    team_name = user_team_assignments[user_id]
-    
-    # Prüfe, ob das Team angemeldet oder auf der Warteliste ist
-    team_registered = team_name in event["teams"]
-    team_on_waitlist = False
-    team_size = 0
-    
-    if team_registered:
-        team_size = event["teams"][team_name]
-    else:
-        # Prüfe, ob das Team auf der Warteliste steht
-        for wl_team, wl_size in event["waitlist"]:
-            if wl_team == team_name:
-                team_on_waitlist = True
-                team_size = wl_size
-                break
-    
-    if not team_registered and not team_on_waitlist:
-        await interaction.response.send_message(
+    if total_size == 0:
+        await send_feedback(
+            interaction,
             f"Team '{team_name}' ist weder angemeldet noch auf der Warteliste.",
             ephemeral=True
         )
         return
     
     # Erstelle ein Modal zum Bearbeiten der Teamgröße
-    modal = TeamEditModal(team_name, team_size, event["max_team_size"])
+    # Verwende registered_name, wenn verfügbar (für korrekte Schreibweise)
+    display_name = registered_name if registered_name else team_name
+    
+    # Prüfe Admin-Status für erweiterte Optionen
+    is_admin = has_role(interaction.user, ORGANIZER_ROLE)
+    
+    modal = TeamEditModal(display_name, total_size, event["max_team_size"], is_admin=is_admin)
     await interaction.response.send_modal(modal)
 
 @bot.tree.command(name="close", description="Schließt die Anmeldungen für das aktuelle Event (nur für Orga-Team)")
 async def close_command(interaction: discord.Interaction):
     """Schließt die Anmeldungen für das Event"""
-    # Nur das Orga-Team darf das ausführen
-    if not has_role(interaction.user, ORGANIZER_ROLE):
-        await interaction.response.send_message(
-            f"Du benötigst die '{ORGANIZER_ROLE}' Rolle, um diese Aktion auszuführen.",
-            ephemeral=True
-        )
-        return
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /close ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
     
-    # Prüfe, ob ein aktives Event existiert
-    event = get_event()
+    # Validiere den Befehlskontext (Rolle, Event)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE)
     if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
         return
     
     # Setze die verfügbaren Slots auf die aktuell verwendeten Slots
@@ -3381,7 +4083,8 @@ async def close_command(interaction: discord.Interaction):
     # Speichere die Änderungen
     save_data(event_data, channel_id, user_team_assignments)
     
-    await interaction.response.send_message(
+    await send_feedback(
+        interaction,
         f"Die Anmeldungen für das Event '{event['name']}' wurden geschlossen. Neue Teams können nur noch auf die Warteliste.",
         ephemeral=True
     )
@@ -3394,35 +4097,101 @@ async def close_command(interaction: discord.Interaction):
     )
     
     # Aktualisiere die Event-Details im Kanal
-    if channel_id:
-        channel = bot.get_channel(channel_id)
-        if channel:
-            await send_event_details(channel)
+    await update_event_displays(interaction=interaction)
+
+@bot.tree.command(name="open", description="Öffnet die Anmeldungen für das aktuelle Event wieder (nur für Orga-Team)")
+async def open_command(interaction: discord.Interaction):
+    """Öffnet die Anmeldungen für das Event wieder"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /open ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
+    # Validiere den Befehlskontext (Rolle, Event)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE)
+    if not event:
+        return
+    
+    # Speichere die alten Werte für das Log
+    old_max_slots = event["max_slots"]
+    
+    # Setze die verfügbaren Slots auf den Standardwert
+    event["max_slots"] = DEFAULT_MAX_SLOTS
+    
+    # Speichere die Änderungen
+    save_data(event_data, channel_id, user_team_assignments)
+    
+    # Berechne wie viele Slots wieder verfügbar sind
+    new_available_slots = DEFAULT_MAX_SLOTS - event["slots_used"]
+    
+    await send_feedback(
+        interaction,
+        f"Die Anmeldungen für das Event '{event['name']}' wurden wieder geöffnet. "
+        f"Es sind jetzt {new_available_slots} Slots verfügbar.",
+        ephemeral=True
+    )
+    
+    # Log eintragen
+    await send_to_log_channel(
+        f"🔓 Event geöffnet: {interaction.user.name} hat die Anmeldungen für das Event '{event['name']}' wieder geöffnet "
+        f"(Slots: {old_max_slots} → {DEFAULT_MAX_SLOTS})",
+        level="INFO",
+        guild=interaction.guild
+    )
+    
+    # Verarbeite die Warteliste, wenn Slots frei geworden sind
+    if new_available_slots > 0:
+        await process_waitlist_after_change(interaction, new_available_slots)
+    
+    # Aktualisiere die Event-Details im Kanal
+    await update_event_displays(interaction=interaction)
 
 @bot.tree.command(name="find", description="Findet ein Team oder einen Spieler im Event")
 async def find_command(interaction: discord.Interaction, search_term: str):
     """Findet ein Team oder einen Spieler im Event"""
-    # Hole das aktive Event
-    event = get_event()
+    # Validiere den Befehlskontext (Event)
+    event, _ = await validate_command_context(interaction)
     if not event:
-        await interaction.response.send_message(
-            "Es gibt derzeit kein aktives Event.",
-            ephemeral=True
-        )
         return
     
     search_term = search_term.lower()
     results = []
     
+    # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+    using_team_ids = False
+    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+        using_team_ids = True
+    
     # Suche in registrierten Teams
-    for team_name, size in event["teams"].items():
-        if search_term in team_name.lower():
-            results.append(f"✅ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Angemeldet)")
+    if using_team_ids:
+        # Neues Format mit Team-IDs
+        for team_name, data in event["teams"].items():
+            if search_term in team_name.lower():
+                size = data.get("size", 0)
+                team_id = data.get("id", "keine ID")
+                results.append(f"✅ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Angemeldet, ID: {team_id})")
+    else:
+        # Altes Format
+        for team_name, size in event["teams"].items():
+            if search_term in team_name.lower():
+                results.append(f"✅ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Angemeldet)")
+    
+    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+    using_waitlist_ids = False
+    if event["waitlist"] and len(event["waitlist"][0]) > 2:
+        using_waitlist_ids = True
     
     # Suche in Warteliste
-    for i, (team_name, size) in enumerate(event["waitlist"]):
-        if search_term in team_name.lower():
-            results.append(f"⏳ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Warteliste Position {i+1})")
+    if using_waitlist_ids:
+        # Neues Format mit Team-IDs
+        for i, entry in enumerate(event["waitlist"]):
+            if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                team_name, size, team_id = entry
+                if search_term in team_name.lower():
+                    results.append(f"⏳ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Warteliste Position {i+1}, ID: {team_id})")
+    else:
+        # Altes Format
+        for i, (team_name, size) in enumerate(event["waitlist"]):
+            if search_term in team_name.lower():
+                results.append(f"⏳ **{team_name}**: {size} {'Person' if size == 1 else 'Personen'} (Warteliste Position {i+1})")
     
     # Suche nach zugewiesenen Benutzern (Discord-ID -> Team)
     user_results = []
@@ -3431,17 +4200,28 @@ async def find_command(interaction: discord.Interaction, search_term: str):
         try:
             user = await bot.fetch_user(int(user_id))
             if search_term in user.name.lower() or search_term in str(user.id):
-                # Prüfe, ob das Team angemeldet oder auf der Warteliste ist
-                if team_name in event["teams"]:
-                    user_results.append(f"👤 **{user.name}** (ID: {user.id}) ist in Team **{team_name}** (Angemeldet)")
-                else:
-                    # Prüfe auf Warteliste
-                    for i, (wl_team, _) in enumerate(event["waitlist"]):
-                        if wl_team == team_name:
-                            user_results.append(f"👤 **{user.name}** (ID: {user.id}) ist in Team **{team_name}** (Warteliste Position {i+1})")
-                            break
-        except:
+                # Hole die Team-Details
+                event_size, waitlist_size, total_size, registered_name, _ = get_team_total_size(event, team_name)
+                
+                if event_size > 0:
+                    user_results.append(f"👤 **{user.name}** (ID: {user.id}) ist in Team **{team_name}** (Angemeldet, Größe: {total_size})")
+                elif waitlist_size > 0:
+                    # Finde Position auf der Warteliste
+                    waitlist_position = "unbekannt"
+                    for i, entry in enumerate(event["waitlist"]):
+                        if using_waitlist_ids:
+                            if len(entry) >= 3 and entry[0].lower() == team_name.lower():
+                                waitlist_position = i + 1
+                                break
+                        else:
+                            if entry[0].lower() == team_name.lower():
+                                waitlist_position = i + 1
+                                break
+                    
+                    user_results.append(f"👤 **{user.name}** (ID: {user.id}) ist in Team **{team_name}** (Warteliste Position {waitlist_position}, Größe: {total_size})")
+        except Exception as e:
             # Bei Fehler einfach überspringen
+            logger.error(f"Fehler beim Suchen des Benutzers {user_id}: {e}")
             pass
     
     # Kombiniere die Ergebnisse
@@ -3455,9 +4235,10 @@ async def find_command(interaction: discord.Interaction, search_term: str):
         if len(message) > 1900:
             message = message[:1900] + "...\n(Weitere Ergebnisse wurden abgeschnitten)"
         
-        await interaction.response.send_message(message, ephemeral=True)
+        await send_feedback(interaction, message, ephemeral=True)
     else:
-        await interaction.response.send_message(
+        await send_feedback(
+            interaction,
             f"Keine Ergebnisse für '{search_term}' gefunden.",
             ephemeral=True
         )
@@ -3467,17 +4248,9 @@ async def find_command(interaction: discord.Interaction, search_term: str):
 @bot.tree.command(name="export_teams", description="Exportiert die Teamliste als CSV-Datei (nur für Orga-Team)")
 async def export_teams(interaction: discord.Interaction):
     """Exportiert alle Teams als CSV-Datei"""
-    # Überprüfe Berechtigung
-    if not has_role(interaction.user, ORGANIZER_ROLE):
-        await interaction.response.send_message(
-            f"Nur Mitglieder mit der Rolle '{ORGANIZER_ROLE}' können diese Aktion ausführen.",
-            ephemeral=True
-        )
-        return
-    
-    event = get_event()
+    # Validiere den Befehlskontext (Rolle, Event)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE)
     if not event:
-        await interaction.response.send_message("Es gibt derzeit kein aktives Event.")
         return
         
     # Erstelle CSV-Inhalt im Speicher
@@ -3488,30 +4261,82 @@ async def export_teams(interaction: discord.Interaction):
     csv_file = io.StringIO()
     csv_writer = csv.writer(csv_file)
     
-    # Schreibe Header
-    csv_writer.writerow(["Typ", "Teamname", "Größe", "Teamleiter-Discord-ID", "Registrierungsdatum"])
+    # Prüfe, ob das Team-Dictionary das erweiterte Format mit IDs verwendet
+    using_team_ids = False
+    if event["teams"] and isinstance(next(iter(event["teams"].values())), dict):
+        using_team_ids = True
+    
+    # Prüfe, ob die Warteliste das erweiterte Format mit IDs verwendet
+    using_waitlist_ids = False
+    if event["waitlist"] and len(event["waitlist"][0]) > 2:
+        using_waitlist_ids = True
+    
+    # Erweiterten Header für das neue Format
+    if using_team_ids or using_waitlist_ids:
+        csv_writer.writerow(["Typ", "Teamname", "Größe", "Teamleiter-Discord-ID", "Team-ID", "Registrierungsdatum"])
+    else:
+        # Standard-Header für das alte Format
+        csv_writer.writerow(["Typ", "Teamname", "Größe", "Teamleiter-Discord-ID", "Registrierungsdatum"])
     
     # Schreibe angemeldete Teams
-    for team_name, size in event["teams"].items():
-        # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
-        leader_id = "Unbekannt"
-        for user_id, assigned_team in user_team_assignments.items():
-            if assigned_team == team_name:
-                leader_id = user_id
-                break
-        
-        csv_writer.writerow(["Angemeldet", team_name, size, leader_id, ""])
+    if using_team_ids:
+        # Neues Format mit Team-IDs
+        for team_name, data in event["teams"].items():
+            size = data.get("size", 0)
+            team_id = data.get("id", "keine ID")
+            
+            # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
+            leader_id = "Unbekannt"
+            for user_id, assigned_team in user_team_assignments.items():
+                if assigned_team.lower() == team_name.lower():
+                    leader_id = user_id
+                    break
+            
+            if using_team_ids or using_waitlist_ids:
+                csv_writer.writerow(["Angemeldet", team_name, size, leader_id, team_id, ""])
+            else:
+                csv_writer.writerow(["Angemeldet", team_name, size, leader_id, ""])
+    else:
+        # Altes Format
+        for team_name, size in event["teams"].items():
+            # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
+            leader_id = "Unbekannt"
+            for user_id, assigned_team in user_team_assignments.items():
+                if assigned_team.lower() == team_name.lower():
+                    leader_id = user_id
+                    break
+            
+            csv_writer.writerow(["Angemeldet", team_name, size, leader_id, ""])
     
     # Schreibe Warteliste
-    for i, (team_name, size) in enumerate(event["waitlist"]):
-        # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
-        leader_id = "Unbekannt"
-        for user_id, assigned_team in user_team_assignments.items():
-            if assigned_team == team_name:
-                leader_id = user_id
-                break
-        
-        csv_writer.writerow(["Warteliste", team_name, size, leader_id, ""])
+    if using_waitlist_ids:
+        # Neues Format mit Team-IDs
+        for i, entry in enumerate(event["waitlist"]):
+            if len(entry) >= 3:  # Format: (team_name, size, team_id)
+                team_name, size, team_id = entry
+                
+                # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
+                leader_id = "Unbekannt"
+                for user_id, assigned_team in user_team_assignments.items():
+                    if assigned_team.lower() == team_name.lower():
+                        leader_id = user_id
+                        break
+                
+                if using_team_ids or using_waitlist_ids:
+                    csv_writer.writerow(["Warteliste", team_name, size, leader_id, team_id, ""])
+                else:
+                    csv_writer.writerow(["Warteliste", team_name, size, leader_id, ""])
+    else:
+        # Altes Format
+        for i, (team_name, size) in enumerate(event["waitlist"]):
+            # Finde Team-Leiter (suche ersten Nutzer mit diesem Team)
+            leader_id = "Unbekannt"
+            for user_id, assigned_team in user_team_assignments.items():
+                if assigned_team.lower() == team_name.lower():
+                    leader_id = user_id
+                    break
+            
+            csv_writer.writerow(["Warteliste", team_name, size, leader_id, ""])
     
     # Zurück zum Anfang der Datei
     csv_file.seek(0)
@@ -3527,10 +4352,598 @@ async def export_teams(interaction: discord.Interaction):
     )
     
     # Sende Datei als Anhang
-    await interaction.response.send_message(
+    await send_feedback(
+        interaction,
         f"Hier ist die Teamliste für das Event '{event['name']}':",
-        file=discord.File(fp=csv_file, filename=filename)
+        ephemeral=False,
+        embed=None,
+        view=None
     )
+    
+    # Da send_feedback nicht direkt Dateien unterstützt, müssen wir hier direkt followup verwenden
+    await interaction.followup.send(file=discord.File(fp=csv_file, filename=filename))
+
+# Admin-Commands
+@bot.tree.command(name="admin_add_team", description="Fügt ein Team direkt zum Event oder zur Warteliste hinzu (nur für Orga-Team)")
+@app_commands.describe(
+    team_name="Name des Teams",
+    size="Größe des Teams",
+    discord_id="Discord ID des Team-Representatives (optional)",
+    discord_name="Discord Name des Team-Representatives (optional)",
+    force_waitlist="Team direkt auf die Warteliste setzen (True/False)"
+)
+async def add_team_command(
+    interaction: discord.Interaction, 
+    team_name: str, 
+    size: int, 
+    discord_id: str = None, 
+    discord_name: str = None, 
+    force_waitlist: bool = False
+):
+    """Fügt ein Team direkt zum Event oder zur Warteliste hinzu (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+
+    # Versuche Discord ID zu konvertieren, wenn angegeben
+    discord_user_id = None
+    if discord_id:
+        try:
+            discord_user_id = int(discord_id.strip())
+        except ValueError:
+            await send_feedback(
+                interaction,
+                "Die Discord ID muss eine gültige Zahl sein."
+            )
+            return
+
+    # Team mit der Admin-Funktion hinzufügen
+    success = await admin_add_team(
+        interaction, 
+        team_name, 
+        size, 
+        discord_user_id=discord_user_id, 
+        discord_username=discord_name, 
+        force_waitlist=force_waitlist
+    )
+    
+    if success:
+        # Event-Anzeige aktualisieren
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await update_event_displays(channel=channel)
+    else:
+        # Fehlermeldung wird bereits von admin_add_team gesendet
+        pass
+
+
+@bot.tree.command(name="admin_team_edit", description="Bearbeitet die Größe eines Teams (nur für Orga-Team)")
+@app_commands.describe(
+    team_name="Name des Teams",
+    new_size="Neue Größe des Teams",
+    reason="Grund für die Änderung (optional)"
+)
+async def admin_team_edit_command(interaction: discord.Interaction, team_name: str, new_size: int, reason: str = None):
+    """Bearbeitet die Größe eines Teams (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+
+    # Teamgröße mit Admin-Rechten aktualisieren
+    team_name = team_name.strip()
+    success = await update_team_size(interaction, team_name, new_size, is_admin=True, reason=reason)
+    
+    if success:
+        # Event-Anzeige aktualisieren
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await update_event_displays(channel=channel)
+    else:
+        # Fehlermeldung wird bereits von update_team_size gesendet
+        pass
+
+
+@bot.tree.command(name="admin_team_remove", description="Entfernt ein Team vom Event oder der Warteliste (nur für Orga-Team)")
+@app_commands.describe(
+    team_name="Name des Teams, das entfernt werden soll"
+)
+async def admin_team_remove_command(interaction: discord.Interaction, team_name: str):
+    """Entfernt ein Team vom Event oder der Warteliste (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+
+    team_name = team_name.strip()
+    
+    # Team mit Admin-Rechten abmelden
+    success = await handle_team_unregistration(interaction, team_name, is_admin=True)
+    
+    if success:
+        # Event-Anzeige aktualisieren
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await update_event_displays(channel=channel)
+
+
+@bot.tree.command(name="admin_waitlist", description="Zeigt die vollständige Warteliste an (nur für Orga-Team)")
+async def admin_waitlist_command(interaction: discord.Interaction):
+    """Zeigt die vollständige Warteliste mit Details an (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+    
+    # Keine Warteliste vorhanden
+    if not event.get('waitlist', []):
+        await send_feedback(
+            interaction,
+            "Es sind aktuell keine Teams auf der Warteliste."
+        )
+        return
+    
+    # Warteliste formatieren
+    waitlist_str = "## 📋 Warteliste\n\n"
+    for idx, entry in enumerate(event['waitlist']):
+        waitlist_str += f"**{idx+1}.** {entry['team_name']} ({entry['size']} Spieler, Team-ID: {entry.get('team_id', 'N/A')})\n"
+    
+    # Warteliste als Embed senden
+    embed = discord.Embed(
+        title=f"Warteliste für {event['name']}",
+        description=waitlist_str,
+        color=discord.Color.orange()
+    )
+    
+    embed.set_footer(text=f"Insgesamt {len(event['waitlist'])} Teams auf der Warteliste")
+    
+    await send_feedback(
+        interaction,
+        "Hier ist die vollständige Warteliste:",
+        ephemeral=True,
+        embed=embed
+    )
+
+
+@bot.tree.command(name="admin_user_assignments", description="Zeigt alle Benutzer-Team-Zuweisungen an (nur für Orga-Team)")
+async def admin_user_assignments_command(interaction: discord.Interaction):
+    """Zeigt alle Benutzer-Team-Zuweisungen an (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+    
+    global user_team_assignments
+    
+    # Keine Zuweisungen vorhanden
+    if not user_team_assignments:
+        await send_feedback(
+            interaction,
+            "Es sind aktuell keine Benutzer-Team-Zuweisungen vorhanden."
+        )
+        return
+    
+    # Zuweisungen formatieren
+    assignments_str = "## 👥 Benutzer-Team-Zuweisungen\n\n"
+    
+    # Nach Teams gruppieren
+    team_users = {}
+    for user_id, team_name in user_team_assignments.items():
+        if team_name not in team_users:
+            team_users[team_name] = []
+        
+        # Versuche den Benutzer zu holen
+        user = interaction.guild.get_member(int(user_id))
+        user_display = f"<@{user_id}> ({user.display_name if user else 'Unbekannt'})"
+        team_users[team_name].append(user_display)
+    
+    # Sortiere Teams alphabetisch
+    for team_name in sorted(team_users.keys()):
+        assignments_str += f"**{team_name}**:\n"
+        for user_entry in team_users[team_name]:
+            assignments_str += f"- {user_entry}\n"
+        assignments_str += "\n"
+    
+    # Zuweisungen als Embed senden
+    embed = discord.Embed(
+        title="Benutzer-Team-Zuweisungen",
+        description=assignments_str,
+        color=discord.Color.blue()
+    )
+    
+    embed.set_footer(text=f"Insgesamt {len(user_team_assignments)} Benutzer-Zuweisungen")
+    
+    await send_feedback(
+        interaction,
+        "Hier sind alle Benutzer-Team-Zuweisungen:",
+        ephemeral=True,
+        embed=embed
+    )
+
+
+@bot.tree.command(name="admin_get_user_id", description="Gibt die Discord ID eines Benutzers zurück (nur für Orga-Team)")
+@app_commands.describe(
+    user="Der Benutzer, dessen ID du erhalten möchtest"
+)
+async def admin_get_user_id_command(interaction: discord.Interaction, user: discord.User):
+    """Gibt die Discord ID eines Benutzers zurück (Admin-Befehl)"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    event, _ = await validate_command_context(interaction, required_role=ORGANIZER_ROLE, team_required=False)
+    if not event:
+        return
+    
+    # User ID und Details senden
+    await send_feedback(
+        interaction,
+        f"### Benutzerinformationen für {user.mention}:\n\n"
+        f"**Discord ID:** `{user.id}`\n"
+        f"**Username:** {user.name}\n"
+        f"**Joined Discord am:** {user.created_at.strftime('%d.%m.%Y')}\n"
+        f"**Team:** {get_user_team(str(user.id)) or 'Kein Team zugewiesen'}",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(name="sync", description="Synchronisiert die Slash-Commands (nur für Orga-Team)")
+@app_commands.describe(
+    clear_cache="Ob der Discord-API-Cache vollständig gelöscht werden soll (empfohlen bei Problemen)"
+)
+async def sync_commands(interaction: discord.Interaction, clear_cache: bool = False):
+    """Synchronisiert die Slash-Commands mit der Discord API"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /sync ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name} mit Parameter clear_cache={clear_cache}")
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /sync ohne ausreichende Berechtigungen zu verwenden")
+        await send_feedback(
+            interaction,
+            f"Du benötigst die Rolle '{ORGANIZER_ROLE}', um diesen Befehl zu nutzen.",
+            ephemeral=True
+        )
+        return
+    
+    # Bestätigungsnachricht senden
+    await send_feedback(
+        interaction,
+        f"{'Lösche den Discord-API-Cache und s' if clear_cache else 'S'}ynchronisiere Slash-Commands mit der Discord API. Dies kann einen Moment dauern...",
+        ephemeral=True
+    )
+    
+    try:
+        if clear_cache:
+            # Alle Befehle vom Bot entfernen
+            bot.tree.clear_commands(guild=None)
+            # Änderungen an die API senden
+            await bot.tree.sync()
+            # Kurz warten
+            await asyncio.sleep(2)
+            # Befehle neu laden
+            await bot.tree._set_current_commands(reload=True)
+            # Erneut synchronisieren
+            await bot.tree.sync()
+            
+            logger.info("Discord-API-Cache erfolgreich gelöscht und Commands neu synchronisiert")
+        else:
+            # Normale Synchronisierung ohne Cache-Löschung
+            await bot.tree.sync()
+        
+        # Log-Eintrag für erfolgreiche Synchronisierung
+        await send_to_log_channel(
+            f"🔄 Slash-Commands: Admin {interaction.user.name} hat die Slash-Commands {'mit Cache-Löschung ' if clear_cache else ''}synchronisiert",
+            level="INFO",
+            guild=interaction.guild
+        )
+        
+        await interaction.followup.send(
+            f"Slash-Commands wurden erfolgreich {'mit Cache-Löschung ' if clear_cache else ''}synchronisiert!\n"
+            f"Es kann bis zu einer Stunde dauern, bis alle Änderungen bei allen Nutzern sichtbar sind.\n\n"
+            f"Tipp: Bei Problemen im Discord-Client hilft oft ein Neustart der Discord-App.",
+            ephemeral=True
+        )
+    except Exception as e:
+        logger.error(f"Fehler bei der Synchronisierung der Slash-Commands: {e}")
+        await interaction.followup.send(f"Fehler bei der Synchronisierung: {e}", ephemeral=True)
+
+@bot.tree.command(name="admin_help", description="Zeigt Hilfe zu Admin-Befehlen an (nur für Orga-Team)")
+async def admin_help_command(interaction: discord.Interaction):
+    """Zeigt Hilfe zu den verfügbaren Admin-Befehlen"""
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        await send_feedback(
+            interaction,
+            f"Du benötigst die Rolle '{ORGANIZER_ROLE}', um diesen Befehl zu nutzen.",
+            ephemeral=True
+        )
+        return
+    
+    # Admin Befehle als Embed senden
+    embed = discord.Embed(
+        title="📋 Admin-Befehle für Event-Management",
+        description="Hier ist eine Übersicht aller verfügbaren Admin-Befehle:",
+        color=discord.Color.blue()
+    )
+    
+    # Event-Verwaltungsbefehle
+    embed.add_field(
+        name="Event-Verwaltung",
+        value=(
+            "• `/event` - Erstellt ein neues Event\n"
+            "• `/delete_event` - Löscht das aktuelle Event\n"
+            "• `/open_reg` - Erhöht die maximale Teamgröße\n"
+            "• `/close` - Schließt die Anmeldungen für das Event\n"
+            "• `/update` - Aktualisiert die Event-Anzeige"
+        ),
+        inline=False
+    )
+    
+    # Team-Verwaltungsbefehle
+    embed.add_field(
+        name="Team-Verwaltung",
+        value=(
+            "• `/admin_add_team` - Fügt ein Team direkt zum Event oder zur Warteliste hinzu\n"
+            "• `/admin_team_edit` - Bearbeitet die Größe eines Teams\n"
+            "• `/admin_team_remove` - Entfernt ein Team vom Event oder der Warteliste\n"
+            "• `/reset_team_assignment` - Setzt die Team-Zuweisung eines Nutzers zurück"
+        ),
+        inline=False
+    )
+    
+    # Informationsbefehle
+    embed.add_field(
+        name="Informationen & Tools",
+        value=(
+            "• `/admin_waitlist` - Zeigt die vollständige Warteliste mit Details an\n"
+            "• `/admin_user_assignments` - Zeigt alle Benutzer-Team-Zuweisungen an\n"
+            "• `/admin_get_user_id` - Gibt die Discord ID eines Benutzers zurück\n"
+            "• `/export_csv` oder `/export_teams` - Exportiert die Teams als CSV-Datei\n"
+            "• `/team_list` - Zeigt eine formatierte Liste aller Teams\n"
+            "• `/find` - Findet ein Team oder einen Spieler im Event"
+        ),
+        inline=False
+    )
+    
+    # Log-Verwaltungsbefehle
+    embed.add_field(
+        name="Log-Verwaltung",
+        value=(
+            "• `/export_log` - Exportiert die Log-Datei zum Download\n"
+            "• `/import_log` - Importiert eine Log-Datei in das System\n"
+            "• `/clear_log` - Leert die Log-Datei (erstellt vorher ein Backup)"
+        ),
+        inline=False
+    )
+    
+    # Konfigurationsbefehle
+    embed.add_field(
+        name="Konfiguration",
+        value=(
+            "• `/set_channel` - Setzt den aktuellen Channel für Event-Updates\n"
+        ),
+        inline=False
+    )
+    
+    embed.set_footer(text="Alle Admin-Befehle erfordern die Rolle 'Orga-Team'")
+    
+    await send_feedback(
+        interaction,
+        "Hier ist eine Übersicht aller Admin-Befehle:",
+        ephemeral=True,
+        embed=embed
+    )
+
+
+# Log-Verwaltungsbefehle
+@bot.tree.command(name="export_log", description="Exportiert die Log-Datei zum Download (nur für Orga-Team)")
+async def export_log_command(interaction: discord.Interaction):
+    """Exportiert die Log-Datei"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /export_log ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /export_log ohne ausreichende Berechtigungen zu verwenden")
+        await send_feedback(
+            interaction,
+            f"Du benötigst die Rolle '{ORGANIZER_ROLE}', um diesen Befehl zu nutzen.",
+            ephemeral=True
+        )
+        return
+    
+    # Log-Datei exportieren
+    result = export_log_file()
+    
+    if not result:
+        await send_feedback(
+            interaction,
+            "Fehler beim Exportieren der Log-Datei. Bitte prüfe die Logs für Details.",
+            ephemeral=True
+        )
+        return
+    
+    # Exportierte Datei senden
+    await send_feedback(
+        interaction,
+        f"Hier ist die exportierte Log-Datei:",
+        ephemeral=True
+    )
+    
+    # Discord-Datei erstellen und senden
+    file = discord.File(fp=result['buffer'], filename=result['filename'])
+    await interaction.followup.send(file=file, ephemeral=True)
+    
+    # Log-Eintrag für erfolgreichen Export
+    await send_to_log_channel(
+        f"📥 Log-Export: Admin {interaction.user.name} hat die Log-Datei exportiert",
+        level="INFO",
+        guild=interaction.guild
+    )
+
+@bot.tree.command(name="clear_log", description="Löscht den Inhalt der Log-Datei (nur für Orga-Team)")
+async def clear_log_command(interaction: discord.Interaction):
+    """Löscht den Inhalt der Log-Datei"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /clear_log ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name}")
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /clear_log ohne ausreichende Berechtigungen zu verwenden")
+        await send_feedback(
+            interaction,
+            f"Du benötigst die Rolle '{ORGANIZER_ROLE}', um diesen Befehl zu nutzen.",
+            ephemeral=True
+        )
+        return
+    
+    # Bestätigungsabfrage
+    class ClearLogConfirmationView(BaseConfirmationView):
+        def __init__(self):
+            super().__init__(title="Log-Datei löschen")
+        
+        async def confirm_callback(self, interaction: discord.Interaction, button: ui.Button):
+            # Log-Datei leeren
+            success = clear_log_file()
+            
+            if success:
+                await send_feedback(
+                    interaction,
+                    "Die Log-Datei wurde erfolgreich geleert und ein Backup erstellt.",
+                    ephemeral=True
+                )
+                
+                # Log-Eintrag für erfolgreiche Löschung
+                await send_to_log_channel(
+                    f"🗑️ Log-Löschung: Admin {interaction.user.name} hat die Log-Datei geleert",
+                    level="INFO",
+                    guild=interaction.guild
+                )
+            else:
+                await send_feedback(
+                    interaction,
+                    "Fehler beim Leeren der Log-Datei. Bitte prüfe die Logs für Details.",
+                    ephemeral=True
+                )
+        
+        async def cancel_callback(self, interaction: discord.Interaction, button: ui.Button):
+            await send_feedback(
+                interaction,
+                "Löschen der Log-Datei abgebrochen.",
+                ephemeral=True
+            )
+    
+    # Bestätigungsabfrage senden
+    confirm_view = ClearLogConfirmationView()
+    await send_feedback(
+        interaction,
+        "⚠️ **Warnung**: Bist du sicher, dass du die Log-Datei leeren möchtest?\n"
+        "Ein Backup wird automatisch erstellt, aber die aktuelle Log-Datei wird geleert.",
+        ephemeral=True,
+        view=confirm_view
+    )
+
+@bot.tree.command(name="import_log", description="Importiert eine Log-Datei (nur für Orga-Team)")
+@app_commands.describe(
+    append="Ob die importierte Datei an die bestehende Log-Datei angehängt (True) oder die bestehende überschrieben werden soll (False)"
+)
+async def import_log_command(interaction: discord.Interaction, append: bool = True):
+    """Importiert eine Log-Datei"""
+    # Kommandoausführung loggen
+    logger.info(f"Slash-Command: /import_log ausgeführt von {interaction.user.name} ({interaction.user.id}) in Kanal {interaction.channel.name} mit Parameter append={append}")
+    
+    # Validiere Berechtigungen (nur Organisatoren)
+    if not has_role(interaction.user, ORGANIZER_ROLE):
+        logger.warning(f"Berechtigungsfehler: {interaction.user.name} ({interaction.user.id}) hat versucht, /import_log ohne ausreichende Berechtigungen zu verwenden")
+        await send_feedback(
+            interaction,
+            f"Du benötigst die Rolle '{ORGANIZER_ROLE}', um diesen Befehl zu nutzen.",
+            ephemeral=True
+        )
+        return
+    
+    # Aufforderung zum Hochladen einer Datei
+    await send_feedback(
+        interaction,
+        f"Bitte lade eine Log-Datei hoch. Der Inhalt wird {'an die bestehende Log-Datei angehängt' if append else 'die bestehende Log-Datei ersetzen'}.\n"
+        f"Lade die Datei als Antwort auf diese Nachricht hoch.",
+        ephemeral=True
+    )
+    
+    # Warte auf den Upload
+    try:
+        response_message = await bot.wait_for(
+            "message",
+            check=lambda m: m.author == interaction.user and m.channel == interaction.channel and m.attachments,
+            timeout=300  # 5 Minuten Timeout
+        )
+        
+        # Prüfe, ob eine Datei angehängt wurde
+        if not response_message.attachments:
+            await send_feedback(
+                interaction,
+                "Keine Datei gefunden. Der Import wurde abgebrochen.",
+                ephemeral=True
+            )
+            return
+        
+        # Hole die erste Datei
+        attachment = response_message.attachments[0]
+        
+        # Prüfe die Dateigröße (max. 10 MB)
+        if attachment.size > 10 * 1024 * 1024:
+            await send_feedback(
+                interaction,
+                "Die Datei ist zu groß (max. 10 MB erlaubt). Der Import wurde abgebrochen.",
+                ephemeral=True
+            )
+            return
+        
+        # Lade den Inhalt der Datei
+        file_content = await attachment.read()
+        
+        # Importiere die Datei
+        success = import_log_file(file_content, append)
+        
+        if success:
+            await send_feedback(
+                interaction,
+                f"Die Log-Datei '{attachment.filename}' wurde erfolgreich importiert.",
+                ephemeral=True
+            )
+            
+            # Log-Eintrag für erfolgreichen Import
+            await send_to_log_channel(
+                f"📤 Log-Import: Admin {interaction.user.name} hat eine Log-Datei importiert (Anhangsmodus: {'Anhängen' if append else 'Überschreiben'})",
+                level="INFO",
+                guild=interaction.guild
+            )
+        else:
+            await send_feedback(
+                interaction,
+                "Fehler beim Importieren der Log-Datei. Bitte prüfe die Logs für Details.",
+                ephemeral=True
+            )
+        
+        # Lösche die Upload-Nachricht
+        try:
+            await response_message.delete()
+        except:
+            pass
+    
+    except asyncio.TimeoutError:
+        await send_feedback(
+            interaction,
+            "Zeitüberschreitung beim Warten auf den Datei-Upload. Der Import wurde abgebrochen.",
+            ephemeral=True
+        )
+
 
 # Start the bot
 if __name__ == "__main__":

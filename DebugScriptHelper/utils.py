@@ -5,9 +5,11 @@ import os
 import logging
 import asyncio
 import threading
+import shutil
 from datetime import datetime
 import discord
 from discord import Embed
+import io
 
 # Discord log channel handler
 discord_log_channel = None
@@ -183,6 +185,28 @@ def save_data(event_data, channel_id, user_team_assignments):
         logger.error(f"Error saving data: {e}")
         return False
 
+def generate_team_id(team_name):
+    """Generiert eine eindeutige ID für ein Team
+    
+    Parameters:
+    - team_name: Der Name des Teams
+    
+    Returns:
+    - Eine eindeutige ID für das Team (basierend auf Namen und Timestamp)
+    """
+    import uuid
+    import time
+    
+    # Kombiniere Team-Namen mit aktuellem Timestamp für Eindeutigkeit
+    unique_base = f"{team_name}_{int(time.time())}"
+    # Erstelle eine UUID basierend auf diesem String
+    team_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_base))
+    # Verwende nur die ersten 8 Zeichen für eine kürzere ID
+    short_id = team_id.split('-')[0]
+    
+    logger.debug(f"Team-ID generiert: {short_id} für Team '{team_name}'")
+    return short_id
+
 def has_role(user, role_name):
     """Check if a user has a specific role or is in the ADMIN_IDS list
     
@@ -222,17 +246,21 @@ def parse_date(date_str):
 def format_event_details(event):
     """Format event details as Discord embed"""
     if not event:
-        return "No active event."
+        return "Kein aktives Event."
     
+    # Prüfen, ob es ein echtes Event mit Inhalt ist
+    if not event.get('name') or not event.get('date'):
+        return "Kein aktives Event."
+        
     embed = Embed(
         title=f"📅 Event: {event['name']}",
-        description=event['description'],
+        description=event.get('description', 'Keine Beschreibung verfügbar'),
         color=discord.Color.blue()
     )
     
     # Add event details
     embed.add_field(name="📆 Datum", value=event['date'], inline=True)
-    embed.add_field(name="⏰ Uhrzeit", value=event['time'], inline=True)
+    embed.add_field(name="⏰ Uhrzeit", value=event.get('time', 'keine Angabe'), inline=True)
     embed.add_field(name="\u200b", value="\u200b", inline=True)  # Spacer for alignment
     
     # Add team registration info
@@ -284,10 +312,14 @@ def format_event_list(event):
     if not event:
         return "Kein aktives Event."
     
+    # Prüfen, ob es ein echtes Event mit Inhalt ist
+    if not event.get('name') or not event.get('date'):
+        return "Kein aktives Event."
+    
     text = f"**📅 Event: {event['name']}**\n"
     text += f"📆 Datum: {event['date']}\n"
-    text += f"⏰ Uhrzeit: {event['time']}\n"
-    text += f"📝 Beschreibung: {event['description']}\n\n"
+    text += f"⏰ Uhrzeit: {event.get('time', 'keine Angabe')}\n"
+    text += f"📝 Beschreibung: {event.get('description', 'Keine Beschreibung verfügbar')}\n\n"
     
     text += f"👥 Team-Anmeldungen: {event['slots_used']}/{event['max_slots']} Plätze belegt\n"
     text += f"🔢 Max. Teamgröße: {event['max_team_size']}\n\n"
@@ -305,3 +337,135 @@ def format_event_list(event):
             text += f"{i+1}. {team_name}: {size} {'Person' if size == 1 else 'Personen'}\n"
     
     return text
+
+# Konstanten für Log-Verwaltung
+LOG_FILE_PATH = "discord_bot.log"
+LOG_BACKUP_FOLDER = "log_backups"
+
+def export_log_file():
+    """Exportiert die aktuelle Log-Datei.
+    
+    Returns:
+    - Pfad zur exportierten Log-Datei oder None bei Fehler
+    """
+    try:
+        # Prüfen, ob die Log-Datei existiert
+        if not os.path.exists(LOG_FILE_PATH):
+            logger.error(f"Log-Datei {LOG_FILE_PATH} existiert nicht!")
+            return None
+        
+        # Einen Buffer für den Log-Inhalt erstellen
+        log_buffer = io.BytesIO()
+        
+        # Die Log-Datei ins Byte-Format kopieren
+        with open(LOG_FILE_PATH, 'rb') as f:
+            log_buffer.write(f.read())
+        
+        # Zeiger an den Anfang des Buffers setzen
+        log_buffer.seek(0)
+        
+        # Zeitstempel für den Dateinamen
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        export_filename = f"log_export_{timestamp}.log"
+        
+        logger.info(f"Log-Datei erfolgreich exportiert: {export_filename}")
+        
+        return {
+            'buffer': log_buffer,
+            'filename': export_filename
+        }
+    
+    except Exception as e:
+        logger.error(f"Fehler beim Exportieren der Log-Datei: {e}")
+        return None
+
+def clear_log_file():
+    """Löscht den Inhalt der Log-Datei, erstellt aber vorher ein Backup.
+    
+    Returns:
+    - True bei Erfolg, False bei Fehler
+    """
+    try:
+        # Prüfen, ob die Log-Datei existiert
+        if not os.path.exists(LOG_FILE_PATH):
+            logger.error(f"Log-Datei {LOG_FILE_PATH} existiert nicht!")
+            return False
+        
+        # Backup-Ordner erstellen, falls nicht vorhanden
+        if not os.path.exists(LOG_BACKUP_FOLDER):
+            os.makedirs(LOG_BACKUP_FOLDER)
+        
+        # Zeitstempel für den Backup-Dateinamen
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        backup_filename = f"{LOG_BACKUP_FOLDER}/log_backup_{timestamp}.log"
+        
+        # Backup erstellen
+        shutil.copy2(LOG_FILE_PATH, backup_filename)
+        
+        # Log-Datei leeren
+        with open(LOG_FILE_PATH, 'w') as f:
+            f.write(f"--- Log neu gestartet: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+        
+        logger.info(f"Log-Datei gelöscht und Backup erstellt: {backup_filename}")
+        return True
+    
+    except Exception as e:
+        logger.error(f"Fehler beim Löschen der Log-Datei: {e}")
+        return False
+
+def import_log_file(file_content, append=True):
+    """Importiert den Inhalt einer Log-Datei.
+    
+    Parameters:
+    - file_content: Inhalt der zu importierenden Log-Datei (Bytes)
+    - append: Ob der Inhalt an die bestehende Log-Datei angehängt werden soll (True)
+              oder die bestehende überschrieben werden soll (False)
+    
+    Returns:
+    - True bei Erfolg, False bei Fehler
+    """
+    try:
+        # Modus basierend auf append-Parameter
+        mode = 'a' if append else 'w'
+        
+        # Backup der aktuellen Log-Datei erstellen, falls sie überschrieben werden soll
+        if not append and os.path.exists(LOG_FILE_PATH):
+            # Backup-Ordner erstellen, falls nicht vorhanden
+            if not os.path.exists(LOG_BACKUP_FOLDER):
+                os.makedirs(LOG_BACKUP_FOLDER)
+            
+            # Zeitstempel für den Backup-Dateinamen
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            backup_filename = f"{LOG_BACKUP_FOLDER}/log_backup_before_import_{timestamp}.log"
+            
+            # Backup erstellen
+            shutil.copy2(LOG_FILE_PATH, backup_filename)
+            logger.info(f"Backup vor Import erstellt: {backup_filename}")
+        
+        # Inhalt in die Log-Datei schreiben
+        with open(LOG_FILE_PATH, mode) as f:
+            if mode == 'w':
+                # Neue Dateien beginnen mit einer Startmeldung
+                f.write(f"--- Importierte Log-Datei: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+            else:
+                # Beim Anhängen eine Trennlinie einfügen
+                f.write(f"\n--- Beginn importierter Logs: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+            
+            # Inhalt als Text konvertieren, falls er als Bytes vorliegt
+            if isinstance(file_content, bytes):
+                text_content = file_content.decode('utf-8', errors='replace')
+            else:
+                text_content = file_content
+                
+            f.write(text_content)
+            
+            if mode == 'a':
+                # Beim Anhängen eine Endmarkierung einfügen
+                f.write(f"\n--- Ende importierter Logs: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+        
+        logger.info("Log-Datei erfolgreich importiert")
+        return True
+    
+    except Exception as e:
+        logger.error(f"Fehler beim Importieren der Log-Datei: {e}")
+        return False
