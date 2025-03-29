@@ -1,3 +1,4 @@
 DebugScriptHelper/.env
 DebugScriptHelper/*.log
 log_backups/*.log
+discloud.config
